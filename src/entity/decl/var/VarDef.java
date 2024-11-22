@@ -7,19 +7,13 @@ import java.util.ArrayList;
 public class VarDef {
     String Ident;
     boolean isArray;
-    ArrayList<Exp> expArrayList;
+    Exp constExp;
     InitVal initVal;
 
-    public VarDef(String ident, boolean isArray, ArrayList<Exp> expArrayList) {
+    public VarDef(String ident, boolean isArray, Exp constExp, InitVal initVal) {
         Ident = ident;
         this.isArray = isArray;
-        this.expArrayList = expArrayList;
-    }
-
-    public VarDef(String ident, boolean isArray, ArrayList<Exp> expArrayList, InitVal initVal) {
-        Ident = ident;
-        this.isArray = isArray;
-        this.expArrayList = expArrayList;
+        this.constExp = constExp;
         this.initVal = initVal;
     }
 
@@ -31,8 +25,8 @@ public class VarDef {
         return isArray;
     }
 
-    public ArrayList<Exp> getExpArrayList() {
-        return expArrayList;
+    public Exp getConstExp() {
+        return constExp;
     }
 
     public InitVal getInitVal() {

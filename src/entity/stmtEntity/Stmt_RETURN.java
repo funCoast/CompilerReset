@@ -13,4 +13,8 @@ public class Stmt_RETURN extends Stmt {
     public Exp getExp() {
         return exp;
     }
+
+    public boolean hasReturnValue() {
+        return (exp != null);
+    }
 }

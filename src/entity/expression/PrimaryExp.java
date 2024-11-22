@@ -9,6 +9,7 @@ public class PrimaryExp {
     Character character;
     PriExpType priExpType;
 
+
     public PrimaryExp(Exp exp, LVal lVal, Integer number,
                       Character character, PriExpType priExpType) {
         this.exp = exp;

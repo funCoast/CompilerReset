@@ -5,12 +5,10 @@ import entity.BType;
 public class FuncFParam {
     BType bType;
     String Ident;
-    boolean isArray;
 
-    public FuncFParam(BType bType, String ident, boolean isArray) {
+    public FuncFParam(BType bType, String ident) {
         this.bType = bType;
         Ident = ident;
-        this.isArray = isArray;
     }
 
     public BType getbType() {
@@ -19,9 +17,5 @@ public class FuncFParam {
 
     public String getIdent() {
         return Ident;
-    }
-
-    public boolean isArray() {
-        return isArray;
     }
 }

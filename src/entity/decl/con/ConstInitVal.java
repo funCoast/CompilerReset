@@ -8,11 +8,8 @@ public class ConstInitVal {
     String StringConst;
     ArrayList<Exp> expArrayList;
 
-    public ConstInitVal(String stringConst) {
+    public ConstInitVal(String stringConst, ArrayList<Exp> expArrayList) {
         StringConst = stringConst;
-    }
-
-    public ConstInitVal(ArrayList<Exp> expArrayList) {
         this.expArrayList = expArrayList;
     }
 

@@ -4,17 +4,19 @@ import entity.Stmt;
 import entity.expression.LOrExp;
 
 public class Stmt_FOR extends Stmt{
-    StmtAssign stmtForInit;
+    Stmt_Assign stmtForInit;
     LOrExp cond;
-    StmtAssign stmtForDo;
+    Stmt_Assign stmtForAdd;
+    Stmt stmtDo;
 
-    public Stmt_FOR(StmtAssign stmtForInit, LOrExp cond, StmtAssign stmtForDo) {
+    public Stmt_FOR(Stmt_Assign stmtForInit, LOrExp cond, Stmt_Assign stmtForAdd, Stmt stmtDo) {
         this.stmtForInit = stmtForInit;
         this.cond = cond;
-        this.stmtForDo = stmtForDo;
+        this.stmtForAdd = stmtForAdd;
+        this.stmtDo = stmtDo;
     }
 
-    public StmtAssign getStmtForInit() {
+    public Stmt_Assign getStmtForInit() {
         return stmtForInit;
     }
 
@@ -22,7 +24,11 @@ public class Stmt_FOR extends Stmt{
         return cond;
     }
 
-    public StmtAssign getStmtForDo() {
-        return stmtForDo;
+    public Stmt_Assign getStmtForAdd() {
+        return stmtForAdd;
+    }
+
+    public Stmt getStmtDo() {
+        return stmtDo;
     }
 }

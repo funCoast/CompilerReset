@@ -17,4 +17,24 @@ public class UnaryExp {
         Ident = ident;
         this.funcRParams = funcRParams;
     }
+
+    public ArrayList<Operation> getOperationArrayList() {
+        return operationArrayList;
+    }
+
+    public boolean isFuncCall() {
+        return isFuncCall;
+    }
+
+    public PrimaryExp getPrimaryExp() {
+        return primaryExp;
+    }
+
+    public String getIdent() {
+        return Ident;
+    }
+
+    public ArrayList<Exp> getFuncRParams() {
+        return funcRParams;
+    }
 }

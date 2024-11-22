@@ -25,4 +25,8 @@ public class Stmt_IF extends Stmt {
     public Stmt getStmtElse() {
         return stmtElse;
     }
+
+    public boolean hasElse() {
+        return (stmtElse != null);
+    }
 }

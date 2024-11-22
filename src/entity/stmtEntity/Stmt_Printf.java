@@ -1,10 +1,11 @@
 package entity.stmtEntity;
 
+import entity.Stmt;
 import entity.expression.Exp;
 
 import java.util.ArrayList;
 
-public class Stmt_Printf {
+public class Stmt_Printf extends Stmt {
     String stringConst;
     ArrayList<Exp> expArrayList;
 
@@ -19,5 +20,9 @@ public class Stmt_Printf {
 
     public ArrayList<Exp> getExpArrayList() {
         return expArrayList;
+    }
+
+    public boolean hasDescribe() {
+        return !expArrayList.isEmpty();
     }
 }

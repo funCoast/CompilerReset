@@ -1,6 +1,21 @@
 package frontend;
 
+import entity.*;
+import entity.Block;
+import entity.BlockItem;
 import entity.CompUnit;
+import entity.decl.Decl;
+import entity.decl.con.ConstDecl;
+import entity.decl.con.ConstDef;
+import entity.decl.con.ConstInitVal;
+import entity.decl.var.InitVal;
+import entity.decl.var.VarDecl;
+import entity.decl.var.VarDef;
+import entity.expression.*;
+import entity.funcdef.FuncDef;
+import entity.funcdef.FuncFParam;
+import entity.funcdef.FuncType;
+import entity.stmtEntity.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -26,18 +41,19 @@ public class Parser {
         this.tokens = tokens;
         this.errors = errors;
         this.correctOutput = new ArrayList<>();
-        this.compUnit = new CompUnit();
     }
 
-    public void parseCompUnit() {
+    public CompUnit parseCompUnit() {
         curpos = 0;
         curToken = tokens.get(0);    // now in 1
+        ArrayList<Decl> declArrayList = new ArrayList<>();
+        ArrayList<FuncDef> funcDefArrayList = new ArrayList<>();
         while (readAfterToken(1).getLexType() != LexType.MAINTK) {
             Token thirdtoken = readAfterToken(2); // get 3
             if (thirdtoken.getLexType() == LexType.LPARENT) {
-                parseFuncDef();
+                funcDefArrayList.add(parseFuncDef());
             } else {
-                parseDecl();
+                declArrayList.add(parseDecl());
             }
         }
         curToken = nextToken(); // skip int
@@ -48,91 +64,108 @@ public class Parser {
         } else {
             curToken = nextToken(); // skip )
         }
-        parseBlock();
+        Block mainBlock = parseBlock();
+        MainFuncDef mainFuncDef = new MainFuncDef(mainBlock);
+        this.compUnit = new CompUnit(declArrayList, funcDefArrayList, mainFuncDef);
         outputType("<MainFuncDef>");
         outputType("<CompUnit>");
         output2File();
+        return this.compUnit;
     }
 
-    private void parseFuncDef() {
-        parseFuncType();
+    private FuncDef parseFuncDef() {
+        FuncType funcType = parseFuncType();
+        String ident = curToken.getName();
         curToken = nextToken(); // skip ident
         curToken = nextToken(); // skip (
+        ArrayList<FuncFParam> funcFParamArrayList = null;
         if (curToken.getLexType() == LexType.INTTK || curToken.getLexType() == LexType.CHARTK) {
-            parseFuncFParams();
+            funcFParamArrayList =  parseFuncFParams();
         }
         if (curToken.getLexType() != LexType.RPARENT) {
             dealError('j');
         } else {
             curToken = nextToken(); // skip )
         }
-        parseBlock();
+        Block block = parseBlock();
         outputType("<FuncDef>");
+        return new FuncDef(funcType, ident, funcFParamArrayList, block);
     }
 
-    private void parseBlock() {
+    private Block parseBlock() {
         curToken = nextToken(); // skip {
+        ArrayList<BlockItem> blockItemArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.RBRACE) {
             curToken = nextToken(); // skip }
         } else {
             while (curToken.getLexType() != LexType.RBRACE) {
-                parseBlockItem();
+                blockItemArrayList.add(parseBlockItem());
             }
             curToken = nextToken(); // skip }
         }
         outputType("<Block>");
+        return new Block(blockItemArrayList);
     }
 
-    private void parseBlockItem() {
+    private BlockItem parseBlockItem() {
         if (curToken.getLexType() == LexType.CONSTTK
                 || curToken.getLexType() == LexType.INTTK
                 || curToken.getLexType() == LexType.CHARTK) {
-            parseDecl();
+            return parseDecl();
         } else {
-            parseStmt();
+            return parseStmt();
         }
         // no need output
     }
 
-    private void parseStmt() {
+    private Stmt parseStmt() {
+        Stmt stmt;
         if (curToken.getLexType() == LexType.SEMICN) { // only has ;
+            stmt = new Stmt_Exp(null, false);
             curToken = nextToken(); // skip ;
         } else if (curToken.getLexType() == LexType.LBRACE) { // it's block
-            parseBlock();
+            stmt = parseBlock();
         } else if (curToken.getLexType() == LexType.IFTK) { // it's if
             curToken = nextToken(); // skip if
             curToken = nextToken(); // skip (
-            parseCond();
+            LOrExp cond = parseCond();
             if (curToken.getLexType() != LexType.RPARENT) {
                 dealError('j');
             } else {
                 curToken = nextToken(); // skip )
             }
-            parseStmt();
+            Stmt stmtIf = parseStmt();
+            Stmt stmtElse = null;
             if (curToken.getLexType() == LexType.ELSETK) {
                 curToken = nextToken();
-                parseStmt();
+                stmtElse = parseStmt();
             }
+            stmt = new Stmt_IF(cond, stmtIf, stmtElse);
         } else if (curToken.getLexType() == LexType.FORTK) { // it's for
             curToken = nextToken(); // skip for
             curToken = nextToken(); // skip (
+            Stmt_Assign stmtForInit = null;
+            LOrExp cond = null;
+            Stmt_Assign stmtForAdd = null;
+            Stmt stmtDo = null;
             if (curToken.getLexType() != LexType.SEMICN) {
-                parseForStmt();
+                stmtForInit = parseForStmt();
             }
             curToken = nextToken(); // skip ;
             if (curToken.getLexType() != LexType.SEMICN) {
-                parseCond();
+                cond = parseCond();
             }
             curToken = nextToken(); // skip ;
             if (curToken.getLexType() != LexType.RPARENT) {
-                parseForStmt();
+                stmtForAdd = parseForStmt();
             }
             if (curToken.getLexType() != LexType.RPARENT) {
                 dealError('j');
             } else {
                 curToken = nextToken(); // skip )
             }
-            parseStmt();
+            stmtDo = parseStmt();
+            stmt = new Stmt_FOR(stmtForInit, cond, stmtForAdd, stmtDo);
         } else if (curToken.getLexType() == LexType.BREAKTK) { // it's break
             curToken = nextToken(); // skip breaks
             if (curToken.getLexType() != LexType.SEMICN) {
@@ -140,6 +173,7 @@ public class Parser {
             } else {
                 curToken = nextToken(); // skip ;
             }
+            stmt = new Stmt_BREAK();
         } else if (curToken.getLexType() == LexType.CONTINUETK) { // it's continue
             curToken = nextToken(); // skip continue
             if (curToken.getLexType() != LexType.SEMICN) {
@@ -147,26 +181,31 @@ public class Parser {
             } else {
                 curToken = nextToken(); // skip ;
             }
+            stmt = new Stmt_CONTINUE();
         } else if (curToken.getLexType() == LexType.RETURNTK) {  // it's return
             curToken = nextToken(); // skip return
+            Exp exp = null;
             if (curToken.getLexType() == LexType.LPARENT || curToken.getLexType() == LexType.IDENFR
                     || curToken.getLexType() == LexType.INTCON || curToken.getLexType() == LexType.CHRCON
                     || curToken.getLexType() == LexType.PLUS || curToken.getLexType() == LexType.MINU
                     || curToken.getLexType() == LexType.NOT) {
-                parseExp();
+                exp = parseExp();
             }
             if (curToken.getLexType() != LexType.SEMICN) {
                 dealError('i');
             } else {
                 curToken = nextToken(); // skip ;
             }
+            stmt = new Stmt_RETURN(exp);
         } else if (curToken.getLexType() == LexType.PRINTFTK) { // it's printf
             curToken = nextToken(); // skip printf
             curToken = nextToken(); // skip (
-            curToken = nextToken(); // skip string、
+            ArrayList<Exp> expArrayList = new ArrayList<>();
+            String stringConst = curToken.getName();
+            curToken = nextToken(); // skip string
             while (curToken.getLexType() == LexType.COMMA) {
                 curToken = nextToken(); // skip ,
-                parseExp();
+                expArrayList.add(parseExp());
             }
             if (curToken.getLexType() != LexType.RPARENT) {
                 dealError('j');
@@ -178,6 +217,7 @@ public class Parser {
             } else {
                 curToken = nextToken(); // skip ;
             }
+            stmt = new Stmt_Printf(stringConst, expArrayList);
         } else { // it's LVal
             int saveOutSum = correctOutput.size();
             int savePos = curpos;
@@ -204,10 +244,15 @@ public class Parser {
             output4Correct = saveOutput4Correct;
             correctOutput.subList(saveOutSum, correctOutput.size()).clear();
             if (isAssign) {
-                parseLVal();
+                LVal lVal = parseLVal();
                 curToken = nextToken(); // skip =
                 if (curToken.getLexType() == LexType.GETINTTK ||
                         curToken.getLexType() == LexType.GETCHARTK) {
+                    if (curToken.getLexType() == LexType.GETINTTK) {
+                        stmt = new Stmt_GetInt(lVal);
+                    } else {
+                        stmt = new Stmt_GetChar(lVal);
+                    }
                     curToken = nextToken(); // skip get~
                     curToken = nextToken(); // skip (
                     if (curToken.getLexType() != LexType.RPARENT) {
@@ -221,94 +266,116 @@ public class Parser {
                         curToken = nextToken(); // skip ;
                     }
                 } else {
-                    parseExp();
+                    Exp exp = parseExp();
                     if (curToken.getLexType() != LexType.SEMICN) {
                         dealError('i');
                     } else {
                         curToken = nextToken(); // skip ;
                     }
+                    stmt = new Stmt_Assign(lVal, exp);
                 }
             } else {
-                parseExp();
+                Exp exp = parseExp();
                 if (curToken.getLexType() != LexType.SEMICN) {
                     dealError('i');
                 } else {
                     curToken = nextToken(); // skip ;
                 }
+                stmt = new Stmt_Exp(exp, true);
             }
         }
         outputType("<Stmt>");
+        return stmt;
     }
 
-    private void parseForStmt() {
-        parseLVal();
+    private Stmt_Assign parseForStmt() {
+        LVal lVal = parseLVal();
         curToken = nextToken(); // skip =
-        parseExp();
+        Exp exp = parseExp();
         outputType("<ForStmt>");
+        return new Stmt_Assign(lVal, exp);
     }
 
-    private void parseCond() {
-        parseLOrExp();
+    private LOrExp parseCond() {
+        LOrExp lOrExp = parseLOrExp();
         outputType("<Cond>");
+        return lOrExp;
     }
 
-    private void parseLOrExp() {
-        parseLAndExp();
+    private LOrExp parseLOrExp() {
+        ArrayList<LAndExp> lAndExpArrayList = new ArrayList<>();
+        lAndExpArrayList.add(parseLAndExp());
         outputType("<LOrExp>");
         while (curToken.getLexType() == LexType.OR) {
             curToken = nextToken();
-            parseLAndExp();
+            lAndExpArrayList.add(parseLAndExp());
             outputType("<LOrExp>");
         }
+        return new LOrExp(lAndExpArrayList);
     }
 
-    private void parseLAndExp() {
-        parseEqExp();
+    private LAndExp parseLAndExp() {
+        ArrayList<EqExp> expArrayList = new ArrayList<>();
+        expArrayList.add(parseEqExp());
         outputType("<LAndExp>");
         while (curToken.getLexType() == LexType.AND) {
             curToken = nextToken();
-            parseEqExp();
+            expArrayList.add(parseEqExp());
             outputType("<LAndExp>");
         }
+        return new LAndExp(expArrayList);
     }
 
-    private void parseEqExp() {
-        parseRelExp();
+    private EqExp parseEqExp() {
+        ArrayList<RelExp> relExpArrayList = new ArrayList<>();
+        ArrayList<Compare> compareArrayList = new ArrayList<>();
+        relExpArrayList.add(parseRelExp());
         outputType("<EqExp>");
         while (curToken.getLexType() == LexType.EQL ||
                 curToken.getLexType() == LexType.NEQ) {
+            compareArrayList.add(getCompare(curToken));
             curToken = nextToken();
-            parseRelExp();
+            relExpArrayList.add(parseRelExp());
             outputType("<EqExp>");
         }
+        return new EqExp(relExpArrayList, compareArrayList);
     }
 
-    private void parseRelExp() {
-        parseAddExp();
+    private RelExp parseRelExp() {
+        ArrayList<Exp> expArrayList = new ArrayList<>();
+        ArrayList<Compare> compareArrayList = new ArrayList<>();
+        expArrayList.add(parseAddExp());
         outputType("<RelExp>");
         while (curToken.getLexType() == LexType.LSS ||
                 curToken.getLexType() == LexType.LEQ ||
                 curToken.getLexType() == LexType.GRE ||
                 curToken.getLexType() == LexType.GEQ) {
+            compareArrayList.add(getCompare(curToken));
             curToken = nextToken(); // skip <,<=...
-            parseAddExp();
+            expArrayList.add(parseAddExp());
             outputType("<RelExp>");
         }
+        return new RelExp(expArrayList, compareArrayList);
     }
 
-    private void parseFuncFParams() {
-        parseFuncFParam();
+    private ArrayList<FuncFParam> parseFuncFParams() {
+        ArrayList<FuncFParam> funcFParamArrayList = new ArrayList<>();
+        funcFParamArrayList.add(parseFuncFParam());
         while (curToken.getLexType() == LexType.COMMA) {
             curToken = nextToken(); // skip ,
-            parseFuncFParam();
+            funcFParamArrayList.add(parseFuncFParam());
         }
         outputType("<FuncFParams>");
+        return funcFParamArrayList;
     }
 
-    private void parseFuncFParam() {
+    private FuncFParam parseFuncFParam() {
+        BType bType = new BType(getBType(curToken));
         curToken = nextToken(); // skip type
+        String ident = curToken.getName();
         curToken = nextToken(); // skip ident
         if (curToken.getLexType() == LexType.LBRACK) {
+            bType.setArray();
             curToken = nextToken(); // skip [
             if (curToken.getLexType() != LexType.RBRACK) {
                 dealError('k');
@@ -317,28 +384,34 @@ public class Parser {
             }
         }
         outputType("<FuncFParam>");
+        return new FuncFParam(bType, ident);
     }
 
-    private void parseFuncType() {
+    private FuncType parseFuncType() {
+        IdentType identType = getFuncType(curToken);
         curToken = nextToken(); // skip type
         outputType("<FuncType>");
+        return new FuncType(identType);
     }
 
-    private void parseDecl() {
+    private Decl parseDecl() {
         if (curToken.getLexType() == LexType.CONSTTK) {
-            parseConstDecl();
+            return parseConstDecl();
         } else {
-            parseVarDecl();
+            return parseVarDecl();
         }
         // no need to output
     }
 
-    private void parseVarDecl() {
+    private VarDecl parseVarDecl() {
+        IdentType identType = getBType(curToken);
+        BType bType = new BType(identType);
+        ArrayList<VarDef> varDefArrayList = new ArrayList<>();
         curToken = nextToken(); // skip BType
-        parseVarDef();
+        varDefArrayList.add(parseVarDef());
         while (curToken.getLexType() == LexType.COMMA) {
             curToken = nextToken(); // skip ,
-            parseVarDef();
+            varDefArrayList.add(parseVarDef());
         }
         if (curToken.getLexType() != LexType.SEMICN) {
             dealError('i');
@@ -346,13 +419,19 @@ public class Parser {
             curToken = nextToken(); // skip ;
         }
         outputType("<VarDecl>");
+        return new VarDecl(bType, varDefArrayList);
     }
 
-    private void parseVarDef() {
+    private VarDef parseVarDef() {
+        String ident = curToken.getName();
+        boolean isArray = false;
+        Exp exp = null;
+        InitVal initVal = null;
         curToken = nextToken(); // skip ident
         if (curToken.getLexType() == LexType.LBRACK) { // IF now is [
+            isArray = true;
             curToken = nextToken(); // skip [
-            parseConstExp();
+            exp = parseConstExp();
             if (curToken.getLexType() != LexType.RBRACK) {
                 dealError('k');
             } else {
@@ -361,35 +440,43 @@ public class Parser {
         }
         if (curToken.getLexType() == LexType.ASSIGN) {
             curToken = nextToken(); // skip =
-            parseInitVal();
+            initVal = parseInitVal();
         }
         outputType("<VarDef>");
+        return new VarDef(ident, isArray, exp, initVal);
     }
 
-    private void parseInitVal() {
+    private InitVal parseInitVal() {
+        String string = null;
+        ArrayList<Exp> expArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.STRCON) {
+            string = curToken.getName();
             curToken = nextToken();
         } else if (curToken.getLexType() == LexType.LBRACE) {
             curToken = nextToken(); // skip {
-            parseExp();
+            expArrayList.add(parseExp());
             while (curToken.getLexType() == LexType.COMMA) {
                 curToken = nextToken(); // skip ,
-                parseExp();
+                expArrayList.add(parseExp());
             }
             curToken = nextToken(); // skip }
         } else {
             parseExp();
         }
         outputType("<InitVal>");
+        return new InitVal(string, expArrayList);
     }
 
-    private void parseConstDecl() {
+    private ConstDecl parseConstDecl() {
         curToken = nextToken(); // skip const
+        IdentType identType = getBType(curToken);
+        BType bType = new BType(identType);
         curToken = nextToken(); // skip BType, now is ConstDef
-        parseConstDef();
+        ArrayList<ConstDef> constDefArrayList = new ArrayList<>();
+        constDefArrayList.add(parseConstDef());
         while (tokens.get(curpos).getLexType() == LexType.COMMA) {
             curToken = nextToken(); // skip ,
-            parseConstDef();
+            constDefArrayList.add(parseConstDef());
         }
         if (curToken.getLexType() != LexType.SEMICN) {
             dealError('i');
@@ -397,13 +484,18 @@ public class Parser {
             curToken = nextToken(); // skip ;
         }
         outputType("<ConstDecl>");
+        return new ConstDecl(bType, constDefArrayList);
     }
 
-    private void parseConstDef() {
+    private ConstDef parseConstDef() {
+        String ident = curToken.getName();
         curToken = nextToken(); // skip Ident
+        boolean isArray = false;
+        Exp exp = null;
         if (curToken.getLexType() == LexType.LBRACK) { // if now is [
             curToken = nextToken(); // skip [
-            parseConstExp();
+            isArray = true;
+            exp = parseConstExp();
             if (curToken.getLexType() != LexType.RBRACK) {
                 dealError('k');
             } else {
@@ -411,64 +503,89 @@ public class Parser {
             }
         }
         curToken = nextToken(); //skip =,jump in InitiVal
-        parseConstInitVal();
+        ConstInitVal constInitVal = parseConstInitVal();
         outputType("<ConstDef>");
+        return new ConstDef(ident, isArray, exp, constInitVal);
     }
 
-    private void parseConstInitVal() {
+    private ConstInitVal parseConstInitVal() {
+        String string = null;
+        ArrayList<Exp> expArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.STRCON) {
+            string = curToken.getName();
             curToken = nextToken(); // skip
         } else if (curToken.getLexType() == LexType.LBRACE) {
             curToken = nextToken(); // skip {
             if (curToken.getLexType() != LexType.RBRACE) {
-                parseConstExp();
+                expArrayList.add(parseConstExp());
                 while (curToken.getLexType() == LexType.COMMA) {
                     curToken = nextToken(); // skip ,
-                    parseConstExp();
+                    expArrayList.add(parseConstExp());
                 }
             }
             curToken = nextToken(); // skip }
         } else {
-            parseConstExp();
+            expArrayList.add(parseConstExp());
         }
         outputType("<ConstInitVal>");
+        return new ConstInitVal(string, expArrayList);
     }
 
-    private void parseConstExp() {
-        parseAddExp();
+    private Exp parseConstExp() {
+        Exp exp = parseAddExp();
         outputType("<ConstExp>");
+        return exp;
     }
 
-    private void parseAddExp() {
+    private Exp parseAddExp() {
         parseMulExp();
         outputType("<AddExp>");
+        ArrayList<MulExp> mulExpArrayList = new ArrayList<>();
+        ArrayList<Operation> operationArrayList = new ArrayList<>();
         while (curToken.getLexType() == LexType.PLUS // if now is +
                 || curToken.getLexType() == LexType.MINU) {// or -
+            operationArrayList.add(getOperation(curToken));
             curToken = nextToken(); // skip -, +
-            parseMulExp();
+            mulExpArrayList.add(parseMulExp());
             outputType("<AddExp>");
         }
+        return new Exp(mulExpArrayList, operationArrayList);
     }
 
-    private void parseMulExp() {
-        parseUnaryExp();
+    private MulExp parseMulExp() {
+        ArrayList<UnaryExp> unaryExpArrayList = new ArrayList<>();
+        ArrayList<Operation> operationArrayList = new ArrayList<>();
+        unaryExpArrayList.add(parseUnaryExp());
         outputType("<MulExp>");
         while (curToken.getLexType() == LexType.MULT // if now is *
                 || curToken.getLexType() == LexType.DIV // or /
                 || curToken.getLexType() == LexType.MOD) { //or %
+            operationArrayList.add(getOperation(curToken));
             curToken = nextToken(); // skip *...
-            parseUnaryExp();
+            unaryExpArrayList.add(parseUnaryExp());
             outputType("<MulExp>");
         }
+        return new MulExp(unaryExpArrayList, operationArrayList);
     }
 
-    private void parseUnaryExp() {
+    private UnaryExp parseUnaryExp() {
+        ArrayList<Operation> operationArrayList = new ArrayList<>();
+        boolean isFuncCall = false;
+        PrimaryExp primaryExp = null;
+        String ident = null;
+        ArrayList<Exp> funcRParamArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.PLUS // if now is +
                 || curToken.getLexType() == LexType.MINU // or -
                 || curToken.getLexType() == LexType.NOT) {// or !
-            parseUnaryOp();
-            parseUnaryExp();
+            operationArrayList.add(parseUnaryOp());
+            UnaryExp unaryExp = parseUnaryExp();
+            isFuncCall = unaryExp.isFuncCall();
+            primaryExp = unaryExp.getPrimaryExp();
+            ident = unaryExp.getIdent();
+            funcRParamArrayList = unaryExp.getFuncRParams();
         } else if (curToken.getLexType() == LexType.IDENFR && readAfterToken(1).getLexType() == LexType.LPARENT) {
+            isFuncCall = true;
+            ident = curToken.getName();
             curToken = nextToken(); // now is (
             if (readAfterToken(1).getLexType() != LexType.RPARENT) { // if next isn't )
                 if (readAfterToken(1).getLexType() == LexType.SEMICN) { // if next is early ;
@@ -476,7 +593,7 @@ public class Parser {
                     dealError('j');
                 } else {
                     curToken = nextToken(); // skip (
-                    parseFuncRParams();
+                    funcRParamArrayList = parseFuncRParams();
                     if (curToken.getLexType() != LexType.RPARENT) {
                         dealError('j');
                     } else {
@@ -493,75 +610,102 @@ public class Parser {
                 }
             }
         } else {
-            parsePrimaryExp();
+            primaryExp = parsePrimaryExp();
         }
         outputType("<UnaryExp>");
+        return new UnaryExp(operationArrayList, isFuncCall, primaryExp, ident, funcRParamArrayList);
     }
 
-    private void parseFuncRParams() {
-        parseExp();
+    private ArrayList<Exp> parseFuncRParams() {
+        ArrayList<Exp> expArrayList = new ArrayList<>();
+        expArrayList.add(parseExp());
         while (curToken.getLexType() == LexType.COMMA) {
             curToken = nextToken(); // skip ,
-            parseExp();
+            expArrayList.add(parseExp());
         }
         outputType("<FuncRParams>");
+        return expArrayList;
     }
 
-    private void parsePrimaryExp() {
+    private PrimaryExp parsePrimaryExp() {
+        Exp exp = null;
+        LVal lVal = null;
+        Integer number = null;
+        Character character = null;
+        PriExpType priExpType = null;
         if (curToken.getLexType() == LexType.LPARENT) {
             curToken = nextToken(); // skip (
-            parseExp();
+            exp = parseExp();
+            priExpType = PriExpType.EXP;
             if (curToken.getLexType() != LexType.RPARENT) {
                 dealError('j');
             } else {
                 curToken = nextToken(); // skip )
             }
         } else if (curToken.getLexType() == LexType.IDENFR) {
-            parseLVal();
+            lVal = parseLVal();
+            priExpType = PriExpType.LVAL;
         } else { // it's num or char
             if (curToken.getLexType() == LexType.INTCON) {
-                parseNumber();
+                number = parseNumber();
+                priExpType = PriExpType.NUM;
             } else {
-                parseCharacter();
+                character = parseCharacter();
+                priExpType = PriExpType.CHAR;
             }
         }
         outputType("<PrimaryExp>");
+        return new PrimaryExp(exp, lVal, number, character, priExpType);
     }
 
-    private void parseNumber() {
+    private Integer parseNumber() {
+        Integer integer = Integer.parseInt(curToken.getName());
         curToken = nextToken(); // just skip
         outputType("<Number>");
+        return integer;
     }
 
-    private void parseCharacter() {
+    private Character parseCharacter() {
+        Character character = curToken.getName().charAt(0);
         curToken = nextToken(); // just skip
         outputType("<Character>");
+        return character;
     }
 
-    private void parseLVal() {
+    private LVal parseLVal() {
+        String ident = null;
+        Exp exp = null;
+        boolean isArray = false;
         if (readAfterToken(1).getLexType() == LexType.LBRACK) { // if next is [
+            isArray = true;
+            ident = curToken.getName();
             curToken = nextToken(); // skip ident
             curToken = nextToken(); // skip [
-            parseExp();
+            exp = parseExp();
             if (curToken.getLexType() != LexType.RBRACK) {
                 dealError('k');
             } else {
                 curToken = nextToken(); // skip ]
             }
         } else { // only Ident
+            ident = curToken.getName();
             curToken = nextToken(); // just skip
         }
         outputType("<LVal>");
+        return new LVal(ident, exp, isArray);
     }
 
-    private void parseExp() {
-        parseAddExp();
+    private Exp parseExp() {
+        Exp exp = parseAddExp();
         outputType("<Exp>");
+        return exp;
     }
 
-    private void parseUnaryOp() {
+    private Operation parseUnaryOp() {
+        Operation operation = getOperation(curToken);
         curToken = nextToken();
         outputType("<UnaryOp>");
+        return operation;
     }
 
     private Token readAfterToken(int index) {
@@ -616,5 +760,73 @@ public class Parser {
         } else {
             errors.output();
         }
+    }
+
+    private IdentType getBType(Token token) {
+        int bType = token.getBType();
+        if (bType == 1) {
+            return IdentType.Int;
+        } else {
+            return IdentType.Char;
+        }
+    }
+
+    private IdentType getFuncType(Token token) {
+        int bType = token.getBType();
+        if (bType == 1) {
+            return IdentType.IntFunc;
+        } else if (bType == 2) {
+            return IdentType.CharFunc;
+        } else {
+            return IdentType.VoidFunc;
+        }
+    }
+
+    private void setArray(IdentType identType) {
+        if (identType == IdentType.Int) {
+            identType = IdentType.IntArray;
+        } else if (identType == IdentType.Char) {
+            identType = IdentType.CharArray;
+        } else if (identType == IdentType.ConstInt) {
+            identType = IdentType.ConstIntArray;
+        } else if (identType == IdentType.ConstChar) {
+            identType = IdentType.ConstCharArray;
+        }
+    }
+
+    private Operation getOperation(Token token) {
+        if (token.getLexType() == LexType.PLUS) {
+            return Operation.ADD;
+        } else if (token.getLexType() == LexType.MINU) {
+            return Operation.SUB;
+        } else if (token.getLexType() == LexType.MULT) {
+            return Operation.MUL;
+        } else if (token.getLexType() == LexType.DIV) {
+            return Operation.DIV;
+        } else if (token.getLexType() == LexType.MOD) {
+            return Operation.MOD;
+        } else if (token.getLexType() == LexType.NOT) {
+            return Operation.NOT;
+        }
+        System.out.println("this is not operation, from:Parse.getOperation");;
+        return null;
+    }
+
+    private Compare getCompare(Token token) {
+        if (token.getLexType() == LexType.GRE) {
+            return Compare.BIG_THAN;
+        } else if (token.getLexType() == LexType.GEQ) {
+            return Compare.BIG_OR_EQUAL;
+        } else if (token.getLexType() == LexType.LSS) {
+            return Compare.SMALL_THAN;
+        } else if (token.getLexType() == LexType.LEQ) {
+            return Compare.SMALL_OR_EQUAL;
+        } else if (token.getLexType() == LexType.EQL) {
+            return Compare.EQUAL;
+        } else if (token.getLexType() == LexType.NEQ) {
+            return Compare.NOT_EQUAL;
+        }
+        System.out.println("this is not compare, from:Parse.getCompare");;
+        return null;
     }
 }

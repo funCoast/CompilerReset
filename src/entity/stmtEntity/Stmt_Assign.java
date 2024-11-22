@@ -4,11 +4,11 @@ import entity.expression.Exp;
 import entity.LVal;
 import entity.Stmt;
 
-public class StmtAssign extends Stmt {
+public class Stmt_Assign extends Stmt {
     LVal lVal;
     Exp exp;
 
-    public StmtAssign(LVal lVal, Exp exp) {
+    public Stmt_Assign(LVal lVal, Exp exp) {
         this.lVal = lVal;
         this.exp = exp;
     }

@@ -7,15 +7,13 @@ import java.util.ArrayList;
 public class ConstDef {
     String Ident;
     boolean isArray;
-    ArrayList<Exp> expArrayList;
+    Exp constExp;
     ConstInitVal constInitVal;
 
-    public ConstDef(String ident, boolean isArray,
-                    ArrayList<Exp> expArrayList,
-                    ConstInitVal constInitVal) {
+    public ConstDef(String ident, boolean isArray, Exp constExp, ConstInitVal constInitVal) {
         Ident = ident;
         this.isArray = isArray;
-        this.expArrayList = expArrayList;
+        this.constExp = constExp;
         this.constInitVal = constInitVal;
     }
 
@@ -27,8 +25,8 @@ public class ConstDef {
         return isArray;
     }
 
-    public ArrayList<Exp> getExpArrayList() {
-        return expArrayList;
+    public Exp getConstExp() {
+        return constExp;
     }
 
     public ConstInitVal getConstInitVal() {

@@ -12,10 +12,10 @@ public class CompUnit {
 
     MainFuncDef mainFuncDef;
 
-    public CompUnit() {
-        this.funcDefArrayList = new ArrayList<>();
-        this.declArrayList = new ArrayList<>();
-        this.mainFuncDef = new MainFuncDef();
+    public CompUnit(ArrayList<Decl> declArrayList, ArrayList<FuncDef> funcDefArrayList, MainFuncDef mainFuncDef) {
+        this.declArrayList = declArrayList;
+        this.funcDefArrayList = funcDefArrayList;
+        this.mainFuncDef = mainFuncDef;
     }
 
     public ArrayList<Decl> getDeclArrayList() {
