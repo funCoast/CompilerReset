@@ -6,12 +6,14 @@ import entity.expression.Exp;
 import java.util.ArrayList;
 
 public class Stmt_Printf extends Stmt {
-    String stringConst;
-    ArrayList<Exp> expArrayList;
+    private int printfLine;
+    private String stringConst;
+    private ArrayList<Exp> expArrayList;
 
-    public Stmt_Printf(String stringConst, ArrayList<Exp> expArrayList) {
+    public Stmt_Printf(String stringConst, ArrayList<Exp> expArrayList, int printfLine) {
         this.stringConst = stringConst;
         this.expArrayList = expArrayList;
+        this.printfLine = printfLine;
     }
 
     public String getStringConst() {
@@ -20,6 +22,10 @@ public class Stmt_Printf extends Stmt {
 
     public ArrayList<Exp> getExpArrayList() {
         return expArrayList;
+    }
+
+    public int getPrintfLine() {
+        return printfLine;
     }
 
     public boolean hasDescribe() {

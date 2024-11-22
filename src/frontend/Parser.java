@@ -174,21 +174,23 @@ public class Parser {
             stmtDo = parseStmt();
             stmt = new Stmt_FOR(stmtForInit, cond, stmtForAdd, stmtDo);
         } else if (curToken.getLexType() == LexType.BREAKTK) { // it's break
+            int breakLine = curToken.getLineNumber();
             curToken = nextToken(); // skip breaks
             if (curToken.getLexType() != LexType.SEMICN) {
                 dealError('i');
             } else {
                 curToken = nextToken(); // skip ;
             }
-            stmt = new Stmt_BREAK();
+            stmt = new Stmt_BREAK(breakLine);
         } else if (curToken.getLexType() == LexType.CONTINUETK) { // it's continue
+            int continueLine = curToken.getLineNumber();
             curToken = nextToken(); // skip continue
             if (curToken.getLexType() != LexType.SEMICN) {
                 dealError('i');
             } else {
                 curToken = nextToken(); // skip ;
             }
-            stmt = new Stmt_CONTINUE();
+            stmt = new Stmt_CONTINUE(continueLine);
         } else if (curToken.getLexType() == LexType.RETURNTK) {  // it's return
             int returnLine = curToken.getLineNumber();
             curToken = nextToken(); // skip return
@@ -206,6 +208,7 @@ public class Parser {
             }
             stmt = new Stmt_RETURN(exp, returnLine);
         } else if (curToken.getLexType() == LexType.PRINTFTK) { // it's printf
+            int printfLine = curToken.getLineNumber();
             curToken = nextToken(); // skip printf
             curToken = nextToken(); // skip (
             ArrayList<Exp> expArrayList = new ArrayList<>();
@@ -225,7 +228,7 @@ public class Parser {
             } else {
                 curToken = nextToken(); // skip ;
             }
-            stmt = new Stmt_Printf(stringConst, expArrayList);
+            stmt = new Stmt_Printf(stringConst, expArrayList, printfLine);
         } else { // it's LVal
             int saveOutSum = correctOutput.size();
             int savePos = curpos;

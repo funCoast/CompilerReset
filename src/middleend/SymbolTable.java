@@ -14,4 +14,8 @@ public class SymbolTable {
     public ArrayList<Symbol> getSymbolArrayList() {
         return symbolArrayList;
     }
+
+    public int getId() {
+        return id;
+    }
 }

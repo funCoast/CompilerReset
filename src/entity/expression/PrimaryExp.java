@@ -3,11 +3,11 @@ package entity.expression;
 import entity.LVal;
 
 public class PrimaryExp {
-    Exp exp;
-    LVal lVal;
-    Integer number;
-    Character character;
-    PriExpType priExpType;
+    private Exp exp;
+    private LVal lVal;
+    private Integer number;
+    private Character character;
+    private PriExpType priExpType;
 
 
     public PrimaryExp(Exp exp, LVal lVal, Integer number,
