@@ -5,9 +5,11 @@ import entity.Stmt;
 
 public class Stmt_RETURN extends Stmt {
     Exp exp;
+    int returnLine;
 
-    public Stmt_RETURN(Exp exp) {
+    public Stmt_RETURN(Exp exp, int returnLine) {
         this.exp = exp;
+        this.returnLine = returnLine;
     }
 
     public Exp getExp() {
@@ -16,5 +18,9 @@ public class Stmt_RETURN extends Stmt {
 
     public boolean hasReturnValue() {
         return (exp != null);
+    }
+
+    public int getReturnLine() {
+        return returnLine;
     }
 }

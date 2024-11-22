@@ -1,6 +1,6 @@
 package entity.funcdef;
 
-import frontend.IdentType;
+import middleend.IdentType;
 
 public class FuncType {
     IdentType identType;

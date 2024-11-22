@@ -3,18 +3,21 @@ package entity.expression;
 import java.util.ArrayList;
 
 public class UnaryExp {
-    ArrayList<Operation> operationArrayList;
-    boolean isFuncCall;
-    PrimaryExp primaryExp;
-    String Ident;
-    ArrayList<Exp> funcRParams;
+    private ArrayList<Operation> operationArrayList;
+    private boolean isFuncCall;
+    private PrimaryExp primaryExp;
+    private String Ident;
+    private int identLine;
+    private ArrayList<Exp> funcRParams;
 
     public UnaryExp(ArrayList<Operation> operationArrayList, boolean isFuncCall,
-                    PrimaryExp primaryExp, String ident, ArrayList<Exp> funcRParams) {
+                    PrimaryExp primaryExp, String ident, ArrayList<Exp> funcRParams,
+                    int identLine) {
         this.operationArrayList = operationArrayList;
         this.isFuncCall = isFuncCall;
         this.primaryExp = primaryExp;
-        Ident = ident;
+        this.Ident = ident;
+        this.identLine = identLine;
         this.funcRParams = funcRParams;
     }
 
@@ -36,5 +39,9 @@ public class UnaryExp {
 
     public ArrayList<Exp> getFuncRParams() {
         return funcRParams;
+    }
+
+    public int getIdentLine() {
+        return identLine;
     }
 }

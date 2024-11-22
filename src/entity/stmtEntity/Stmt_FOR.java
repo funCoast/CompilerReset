@@ -31,4 +31,16 @@ public class Stmt_FOR extends Stmt{
     public Stmt getStmtDo() {
         return stmtDo;
     }
+
+    public boolean hasInit() {
+        return (stmtForInit != null);
+    }
+
+    public boolean hasCond() {
+        return (cond != null);
+    }
+
+    public boolean hasAdd() {
+        return (stmtForAdd != null);
+    }
 }

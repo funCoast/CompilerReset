@@ -5,16 +5,19 @@ import entity.expression.Exp;
 import java.util.ArrayList;
 
 public class VarDef {
-    String Ident;
-    boolean isArray;
-    Exp constExp;
-    InitVal initVal;
+    private String Ident;
+    private boolean isArray;
+    private Exp constExp;
+    private InitVal initVal;
+    private int identLine;
 
-    public VarDef(String ident, boolean isArray, Exp constExp, InitVal initVal) {
+
+    public VarDef(String ident, boolean isArray, Exp constExp, InitVal initVal, int identLine) {
         Ident = ident;
         this.isArray = isArray;
         this.constExp = constExp;
         this.initVal = initVal;
+        this.identLine = identLine;
     }
 
     public String getIdent() {
@@ -31,5 +34,9 @@ public class VarDef {
 
     public InitVal getInitVal() {
         return initVal;
+    }
+
+    public int getIdentLine() {
+        return identLine;
     }
 }

@@ -16,6 +16,7 @@ import entity.funcdef.FuncDef;
 import entity.funcdef.FuncFParam;
 import entity.funcdef.FuncType;
 import entity.stmtEntity.*;
+import middleend.IdentType;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,6 +30,8 @@ public class Parser {
     private Token curToken;
 
     private boolean  output4Correct = true;
+
+    private boolean output4Error = false;
 
     private CompError errors;
 
@@ -75,6 +78,7 @@ public class Parser {
 
     private FuncDef parseFuncDef() {
         FuncType funcType = parseFuncType();
+        int identLine = curToken.getLineNumber();
         String ident = curToken.getName();
         curToken = nextToken(); // skip ident
         curToken = nextToken(); // skip (
@@ -89,22 +93,25 @@ public class Parser {
         }
         Block block = parseBlock();
         outputType("<FuncDef>");
-        return new FuncDef(funcType, ident, funcFParamArrayList, block);
+        return new FuncDef(funcType, ident, funcFParamArrayList, block, identLine);
     }
 
     private Block parseBlock() {
+        int rBrace;
         curToken = nextToken(); // skip {
         ArrayList<BlockItem> blockItemArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.RBRACE) {
+            rBrace = curToken.getLineNumber();
             curToken = nextToken(); // skip }
         } else {
             while (curToken.getLexType() != LexType.RBRACE) {
                 blockItemArrayList.add(parseBlockItem());
             }
+            rBrace = curToken.getLineNumber();
             curToken = nextToken(); // skip }
         }
         outputType("<Block>");
-        return new Block(blockItemArrayList);
+        return new Block(blockItemArrayList, rBrace);
     }
 
     private BlockItem parseBlockItem() {
@@ -183,6 +190,7 @@ public class Parser {
             }
             stmt = new Stmt_CONTINUE();
         } else if (curToken.getLexType() == LexType.RETURNTK) {  // it's return
+            int returnLine = curToken.getLineNumber();
             curToken = nextToken(); // skip return
             Exp exp = null;
             if (curToken.getLexType() == LexType.LPARENT || curToken.getLexType() == LexType.IDENFR
@@ -196,7 +204,7 @@ public class Parser {
             } else {
                 curToken = nextToken(); // skip ;
             }
-            stmt = new Stmt_RETURN(exp);
+            stmt = new Stmt_RETURN(exp, returnLine);
         } else if (curToken.getLexType() == LexType.PRINTFTK) { // it's printf
             curToken = nextToken(); // skip printf
             curToken = nextToken(); // skip (
@@ -370,8 +378,9 @@ public class Parser {
     }
 
     private FuncFParam parseFuncFParam() {
-        BType bType = new BType(getBType(curToken));
+        BType bType = new BType(getBType(curToken, false));
         curToken = nextToken(); // skip type
+        int identLine = curToken.getLineNumber();
         String ident = curToken.getName();
         curToken = nextToken(); // skip ident
         if (curToken.getLexType() == LexType.LBRACK) {
@@ -384,7 +393,7 @@ public class Parser {
             }
         }
         outputType("<FuncFParam>");
-        return new FuncFParam(bType, ident);
+        return new FuncFParam(bType, ident, identLine);
     }
 
     private FuncType parseFuncType() {
@@ -404,7 +413,7 @@ public class Parser {
     }
 
     private VarDecl parseVarDecl() {
-        IdentType identType = getBType(curToken);
+        IdentType identType = getBType(curToken ,false);
         BType bType = new BType(identType);
         ArrayList<VarDef> varDefArrayList = new ArrayList<>();
         curToken = nextToken(); // skip BType
@@ -423,6 +432,7 @@ public class Parser {
     }
 
     private VarDef parseVarDef() {
+        int identLine = curToken.getLineNumber();
         String ident = curToken.getName();
         boolean isArray = false;
         Exp exp = null;
@@ -443,7 +453,7 @@ public class Parser {
             initVal = parseInitVal();
         }
         outputType("<VarDef>");
-        return new VarDef(ident, isArray, exp, initVal);
+        return new VarDef(ident, isArray, exp, initVal, identLine);
     }
 
     private InitVal parseInitVal() {
@@ -469,7 +479,7 @@ public class Parser {
 
     private ConstDecl parseConstDecl() {
         curToken = nextToken(); // skip const
-        IdentType identType = getBType(curToken);
+        IdentType identType = getBType(curToken, true);
         BType bType = new BType(identType);
         curToken = nextToken(); // skip BType, now is ConstDef
         ArrayList<ConstDef> constDefArrayList = new ArrayList<>();
@@ -488,6 +498,7 @@ public class Parser {
     }
 
     private ConstDef parseConstDef() {
+        int identLine = curToken.getLineNumber();
         String ident = curToken.getName();
         curToken = nextToken(); // skip Ident
         boolean isArray = false;
@@ -505,7 +516,7 @@ public class Parser {
         curToken = nextToken(); //skip =,jump in InitiVal
         ConstInitVal constInitVal = parseConstInitVal();
         outputType("<ConstDef>");
-        return new ConstDef(ident, isArray, exp, constInitVal);
+        return new ConstDef(ident, isArray, exp, constInitVal, identLine);
     }
 
     private ConstInitVal parseConstInitVal() {
@@ -573,6 +584,7 @@ public class Parser {
         boolean isFuncCall = false;
         PrimaryExp primaryExp = null;
         String ident = null;
+        int identLine = 0;
         ArrayList<Exp> funcRParamArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.PLUS // if now is +
                 || curToken.getLexType() == LexType.MINU // or -
@@ -582,9 +594,11 @@ public class Parser {
             isFuncCall = unaryExp.isFuncCall();
             primaryExp = unaryExp.getPrimaryExp();
             ident = unaryExp.getIdent();
+            identLine = unaryExp.getIdentLine();
             funcRParamArrayList = unaryExp.getFuncRParams();
         } else if (curToken.getLexType() == LexType.IDENFR && readAfterToken(1).getLexType() == LexType.LPARENT) {
             isFuncCall = true;
+            identLine = curToken.getLineNumber();
             ident = curToken.getName();
             curToken = nextToken(); // now is (
             if (readAfterToken(1).getLexType() != LexType.RPARENT) { // if next isn't )
@@ -613,7 +627,7 @@ public class Parser {
             primaryExp = parsePrimaryExp();
         }
         outputType("<UnaryExp>");
-        return new UnaryExp(operationArrayList, isFuncCall, primaryExp, ident, funcRParamArrayList);
+        return new UnaryExp(operationArrayList, isFuncCall, primaryExp, ident, funcRParamArrayList, identLine);
     }
 
     private ArrayList<Exp> parseFuncRParams() {
@@ -675,9 +689,11 @@ public class Parser {
     private LVal parseLVal() {
         String ident = null;
         Exp exp = null;
+        int identLine;
         boolean isArray = false;
         if (readAfterToken(1).getLexType() == LexType.LBRACK) { // if next is [
             isArray = true;
+            identLine = curToken.getLineNumber();
             ident = curToken.getName();
             curToken = nextToken(); // skip ident
             curToken = nextToken(); // skip [
@@ -688,11 +704,12 @@ public class Parser {
                 curToken = nextToken(); // skip ]
             }
         } else { // only Ident
+            identLine = curToken.getLineNumber();
             ident = curToken.getName();
             curToken = nextToken(); // just skip
         }
         outputType("<LVal>");
-        return new LVal(ident, exp, isArray);
+        return new LVal(ident, exp, isArray, identLine);
     }
 
     private Exp parseExp() {
@@ -758,16 +775,26 @@ public class Parser {
                 e.printStackTrace();
             }
         } else {
-            errors.output();
+            if (output4Error) {
+                errors.output();
+            }
         }
     }
 
-    private IdentType getBType(Token token) {
+    private IdentType getBType(Token token, boolean isConst) {
         int bType = token.getBType();
         if (bType == 1) {
-            return IdentType.Int;
+            if (isConst) {
+                return IdentType.ConstInt;
+            } else {
+                return IdentType.Int;
+            }
         } else {
-            return IdentType.Char;
+            if (isConst) {
+                return IdentType.ConstChar;
+            } else {
+                return IdentType.Char;
+            }
         }
     }
 

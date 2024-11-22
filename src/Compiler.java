@@ -1,7 +1,9 @@
+import entity.CompUnit;
 import frontend.CompError;
 import frontend.Lexer;
 import frontend.Parser;
 import frontend.Token;
+import middleend.Visitor;
 
 import java.util.ArrayList;
 
@@ -12,6 +14,9 @@ public class Compiler {
         ArrayList<Token> tokens = lexer.lexicalAnalysis();
         //
         Parser parser = new Parser(tokens, errors);
-        parser.parseCompUnit();
+        CompUnit compUnit = parser.parseCompUnit();
+        //
+        Visitor visitor = new Visitor(compUnit, errors);
+        visitor.visit();
     }
 }

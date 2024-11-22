@@ -1,4 +1,4 @@
-package frontend;
+package middleend;
 
 public enum IdentType {
     // Const

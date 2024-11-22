@@ -1,6 +1,6 @@
 package entity;
 
-import frontend.IdentType;
+import middleend.IdentType;
 
 public class BType {
     IdentType identType;
@@ -13,15 +13,16 @@ public class BType {
         return identType;
     }
 
-    public void setArray() {
+    public IdentType setArray() {
         if (identType == IdentType.Int) {
-            identType = IdentType.IntArray;
+            return IdentType.IntArray;
         } else if (identType == IdentType.Char) {
-            identType = IdentType.CharArray;
+            return IdentType.CharArray;
         } else if (identType == IdentType.ConstInt) {
-            identType = IdentType.ConstIntArray;
+            return IdentType.ConstIntArray;
         } else if (identType == IdentType.ConstChar) {
-            identType = IdentType.ConstCharArray;
+            return IdentType.ConstCharArray;
         }
+        return null;
     }
 }

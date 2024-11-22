@@ -20,4 +20,8 @@ public class ConstInitVal {
     public ArrayList<Exp> getExpArrayList() {
         return expArrayList;
     }
+
+    public boolean isString() {
+        return expArrayList == null || expArrayList.isEmpty();
+    }
 }
