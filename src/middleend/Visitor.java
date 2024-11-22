@@ -58,6 +58,7 @@ public class Visitor {
             visitFuncDef(funcDef);
         }
         visitMainFuncDef(compUnit.getMainFuncDef());
+        popCurTable();
     }
 
     private void visitDecl(Decl decl) {
@@ -157,11 +158,11 @@ public class Visitor {
         Symbol symbol = new Symbol(symbolTableArrayList.indexOf(curSymbolTable) + 1, ident, identType, funcInfo);
         insertSymbol(symbol);
         // ^^^ insert symbol
+        pushNewTable();
         ArrayList<FuncFParam> funcFParamArrayList = funcDef.getFuncFParamArrayList();
         for (FuncFParam funcFParam : funcFParamArrayList) {
             visitFuncFParam(funcFParam);
         }
-        pushNewTable();
         visitBlock(funcDef.getBlock(), identType, true);
         popCurTable();
     }
@@ -170,10 +171,14 @@ public class Visitor {
         String ident = funcFParam.getIdent();
         int identLine = funcFParam.getIdentLine();
         searchInCurTable(ident, identLine);
+        insertSymbol(new Symbol(symbolTableArrayList.indexOf(curSymbolTable) + 1,
+                funcFParam.getIdent(), funcFParam.getbType().getIdentType(), null));
     }
 
     private void visitMainFuncDef(MainFuncDef mainFuncDef) {
-
+        pushNewTable();
+        visitBlock(mainFuncDef.getBlock(), IdentType.IntFunc, true);
+        popCurTable();
     }
 
     private void visitBlock(Block block, IdentType identType, boolean needReturn) {
@@ -181,10 +186,14 @@ public class Visitor {
         for (BlockItem blockItem : blockItemArrayList) {
             visitBlockItem(blockItem, identType);
         }
-        if (needReturn && (identType == IdentType.IntFunc || identType == IdentType.CharFunc)) {
-            BlockItem finalItem = blockItemArrayList.get(blockItemArrayList.size() - 1);
-            if (!(finalItem instanceof Stmt_RETURN)) {
+        if (needReturn && identType != IdentType.VoidFunc) {
+            if (blockItemArrayList.isEmpty()) {
                 dealError('g', block.getrBraceLine());
+            } else {
+                BlockItem finalItem = blockItemArrayList.get(blockItemArrayList.size() - 1);
+                if (!(finalItem instanceof Stmt_RETURN)) {
+                    dealError('g', block.getrBraceLine());
+                }
             }
         }
     }
@@ -310,6 +319,9 @@ public class Visitor {
         String ident = lVal.getIdent();
         int identLine = lVal.getIdentLine();
         Symbol symbol = searchHasDefine(ident, identLine);
+        if (symbol == null) {
+            return IdentType.Char;
+        }
         IdentType identType = symbol.getIdentType();
         if (needCheckConst) {
             if (symbol.isConst()) {
@@ -319,7 +331,6 @@ public class Visitor {
         if (lVal.isArray()) {
             if (lVal.getExp() != null) {
                 visitExp(lVal.getExp());
-            } else {
                 identType = goBasic(identType);
             }
         }
@@ -353,6 +364,9 @@ public class Visitor {
             String ident = unaryExp.getIdent();
             int identLine = unaryExp.getIdentLine();
             Symbol funcSymbol = searchHasDefine(ident, identLine);
+            if (funcSymbol == null) {
+                return IdentType.Char;
+            }
             FuncInfo expectedFuncInfo = funcSymbol.getFuncInfo(); // expected
             ArrayList<Exp> funcRParams = unaryExp.getFuncRParams();
             int paramNumGet = funcRParams.size();
@@ -369,7 +383,7 @@ public class Visitor {
             } // visit and get identType ArrayList
             if (expectedFuncInfo.getParamNum() != paramNumGet) {
                 dealError('d', identLine);
-            } else if (expectedFuncInfo.checkCons(new FuncInfo(paramNumGet, paramTypesGet))) {
+            } else if (!expectedFuncInfo.checkCons(new FuncInfo(paramNumGet, paramTypesGet))) {
                 dealError('e', identLine);
             } // deal error
             return adaptIdentType(identType, identTypeReturn);
@@ -426,12 +440,18 @@ public class Visitor {
         SymbolTable symbolTable = new SymbolTable(tableIdTop);
         this.symbolTableArrayList.add(symbolTable);
         this.curSymbolTable = symbolTable;
+        outputSymbols.add(symbolTable);
     }
 
     private void popCurTable() {
-        outputSymbols.add(this.symbolTableArrayList.get(symbolTableArrayList.size() - 1));
         this.symbolTableArrayList.remove(symbolTableArrayList.size() - 1);
-        this.curSymbolTable = this.symbolTableArrayList.get(symbolTableArrayList.size() - 1);
+        if (!symbolTableArrayList.isEmpty()) {
+            this.curSymbolTable = this.symbolTableArrayList.get(symbolTableArrayList.size() - 1);
+        }
+    }
+
+    private void insertSymbol(Symbol symbol) {
+        curSymbolTable.getSymbolArrayList().add(symbol);
     }
 
     private void searchInCurTable(String ident, int identLine) {
@@ -467,29 +487,26 @@ public class Visitor {
         return symbolGet;
     }
 
-    private void insertSymbol(Symbol symbol) {
-        curSymbolTable.getSymbolArrayList().add(symbol);
-    }
-
     private IdentType adaptIdentType(IdentType identTypeA, IdentType identTypeB) {
-        if (identTypeA == identTypeB) {
-            return identTypeA;
-        }
-        // char 遇到 int 返回 int
-        if ((identTypeA == IdentType.Char && identTypeB == IdentType.Int) ||
-                (identTypeA == IdentType.Int && identTypeB == IdentType.Char)) {
-            return IdentType.Int;
-        }
-        // 基础类型遇到数组，返回数组类型
         if (isBasicType(identTypeA) && isArrayType(identTypeB)) {
             return identTypeB;
         }
         if (isArrayType(identTypeA) && isBasicType(identTypeB)) {
             return identTypeA;
         }
-        // 默认返回数组类型（处理 Const 和非 Const 的数组）
         if (isArrayType(identTypeA) && isArrayType(identTypeB)) {
-            return identTypeA; // 或 identTypeB，依据业务需求调整
+            if (isConstType(identTypeA)) {
+                return identTypeB;
+            } else {
+                return identTypeA;
+            }
+        }
+        if (isBasicType(identTypeA) && isBasicType(identTypeB)) {
+            if (identTypeA == IdentType.Int || identTypeA == IdentType.ConstInt ||
+            identTypeB == IdentType.Int || identTypeB == IdentType.ConstInt) {
+                return IdentType.Int;
+            }
+            return IdentType.Char;
         }
         return null;
     }
@@ -502,6 +519,14 @@ public class Visitor {
     private boolean isArrayType(IdentType identType) {
         return identType == IdentType.CharArray || identType == IdentType.IntArray ||
                 identType == IdentType.ConstCharArray || identType == IdentType.ConstIntArray;
+    }
+
+    private boolean isConstType(IdentType identType) {
+        if (identType == IdentType.ConstChar || identType == IdentType.ConstInt
+                || identType == IdentType.ConstCharArray || identType == IdentType.ConstIntArray) {
+            return true;
+        }
+        return false;
     }
 
     private IdentType goBasic(IdentType identType) {
@@ -551,29 +576,9 @@ public class Visitor {
                 e.printStackTrace();
             }
             try (FileWriter writer = new FileWriter("symbol.txt", true)) { // 追加模式
-                ArrayList<Integer> ids = new ArrayList<>();
-                ArrayList<ArrayList<Symbol>> tables = new ArrayList<>();
                 for (SymbolTable symbolTable : outputSymbols) {
-                    ids.add(symbolTable.getId());
-                    tables.add(symbolTable.getSymbolArrayList());
-                }
-                for (int i = 0; i < ids.size() - 1; i++) {
-                    for (int j = 0; j < ids.size() - 1 - i; j++) {
-                        if (ids.get(j) > ids.get(j + 1)) {
-                            int tempId = ids.get(j);
-                            ids.set(j, ids.get(j + 1));
-                            ids.set(j + 1, tempId);
-                            ArrayList<Symbol> tempTable = tables.get(j);
-                            tables.set(j, tables.get(j + 1));
-                            tables.set(j + 1, tempTable);
-                        }
-                    }
-                }
-                for (int i = 0; i < tables.size(); i++) {
-                    int tableId = ids.get(i);
-                    ArrayList<Symbol> symbols = tables.get(i);
-                    for (Symbol symbol : symbols) {
-                        writer.write(tableId + " " + symbol.getName() + " " + symbol.getIdentType() + "\n");
+                    for (Symbol symbol : symbolTable.getSymbolArrayList()) {
+                        writer.write((symbolTable.getId()) + " " + symbol.getName() + " " + symbol.getIdentType() + "\n");
                     }
                 }
             } catch (IOException e) {

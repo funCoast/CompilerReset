@@ -82,7 +82,7 @@ public class Parser {
         String ident = curToken.getName();
         curToken = nextToken(); // skip ident
         curToken = nextToken(); // skip (
-        ArrayList<FuncFParam> funcFParamArrayList = null;
+        ArrayList<FuncFParam> funcFParamArrayList = new ArrayList<>();
         if (curToken.getLexType() == LexType.INTTK || curToken.getLexType() == LexType.CHARTK) {
             funcFParamArrayList =  parseFuncFParams();
         }
@@ -387,7 +387,7 @@ public class Parser {
         String ident = curToken.getName();
         curToken = nextToken(); // skip ident
         if (curToken.getLexType() == LexType.LBRACK) {
-            bType.setArray();
+            bType.setIdentType(bType.setArray());
             curToken = nextToken(); // skip [
             if (curToken.getLexType() != LexType.RBRACK) {
                 dealError('k');
@@ -552,10 +552,10 @@ public class Parser {
     }
 
     private Exp parseAddExp() {
-        parseMulExp();
-        outputType("<AddExp>");
         ArrayList<MulExp> mulExpArrayList = new ArrayList<>();
         ArrayList<Operation> operationArrayList = new ArrayList<>();
+        mulExpArrayList.add(parseMulExp());
+        outputType("<AddExp>");
         while (curToken.getLexType() == LexType.PLUS // if now is +
                 || curToken.getLexType() == LexType.MINU) {// or -
             operationArrayList.add(getOperation(curToken));

@@ -25,4 +25,8 @@ public class BType {
         }
         return null;
     }
+
+    public void setIdentType(IdentType identType) {
+        this.identType = identType;
+    }
 }
