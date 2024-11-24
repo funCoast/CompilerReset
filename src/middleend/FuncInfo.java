@@ -1,5 +1,7 @@
 package middleend;
 
+import llvm.Function;
+
 import java.util.ArrayList;
 
 public class FuncInfo {
@@ -7,9 +9,12 @@ public class FuncInfo {
 
     private ArrayList<IdentType> paramTypes;
 
-    public FuncInfo(int paramNum, ArrayList<IdentType> paramTypes) {
+    private Function function;
+
+    public FuncInfo(int paramNum, ArrayList<IdentType> paramTypes, Function function) {
         this.paramNum = paramNum;
         this.paramTypes = paramTypes;
+        this.function =function;
     }
 
     public int getParamNum() {

@@ -3,6 +3,7 @@ import frontend.CompError;
 import frontend.Lexer;
 import frontend.Parser;
 import frontend.Token;
+import llvm.Module;
 import middleend.Visitor;
 
 import java.util.ArrayList;
@@ -17,6 +18,6 @@ public class Compiler {
         CompUnit compUnit = parser.parseCompUnit();
         //
         Visitor visitor = new Visitor(compUnit, errors);
-        visitor.visit();
+        Module module = visitor.visit();
     }
 }

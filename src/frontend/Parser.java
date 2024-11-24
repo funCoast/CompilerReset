@@ -474,7 +474,7 @@ public class Parser {
             }
             curToken = nextToken(); // skip }
         } else {
-            parseExp();
+            expArrayList.add(parseExp());
         }
         outputType("<InitVal>");
         return new InitVal(string, expArrayList);
@@ -683,7 +683,7 @@ public class Parser {
     }
 
     private Character parseCharacter() {
-        Character character = curToken.getName().charAt(0);
+        Character character = curToken.getName().charAt(1);
         curToken = nextToken(); // just skip
         outputType("<Character>");
         return character;

@@ -1,11 +1,18 @@
-int f1()
-{}
+int a = 1000;
 
-void f2() {}
+int foo(int a, int b){
+    return a + b;
+}
 
-char f3() {}
-int f4() {}
+void bar() {
+    a = 1200;
+    return;
+}
 
 int main() {
-
+    bar();
+    int b = a;
+    a = getint();
+    printf("%d\n", foo(a, b));
+    return 0;
 }
