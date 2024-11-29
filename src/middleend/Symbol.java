@@ -11,15 +11,16 @@ public class Symbol {
 
     private FuncInfo funcInfo;
 
-    private int value;
-
     private LLRegister llRegister;
 
-    public Symbol(int tableId, String name, IdentType identType, FuncInfo funcInfo) {
+    private int arraySize;
+
+    public Symbol(int tableId, String name, IdentType identType, FuncInfo funcInfo , int arraySize) {
         this.tableId = tableId;
         this.name = name;
         this.identType = identType;
         this.funcInfo = funcInfo;
+        this.arraySize = arraySize;
     }
 
     public void setLlRegister(LLRegister llRegister) {
@@ -51,11 +52,11 @@ public class Symbol {
         return tableId;
     }
 
-    public void setValue(int value) {
-        if (identType == IdentType.Char || identType == IdentType.ConstChar) {
-            this.value = value & 0xFF;
-        } else if (identType == IdentType.Int || identType == IdentType.ConstInt){
-            this.value = value;
-        }
+    public int getArraySize() {
+        return arraySize;
+    }
+
+    public void setArraySize(int arraySize) {
+        this.arraySize = arraySize;
     }
 }

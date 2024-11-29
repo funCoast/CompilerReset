@@ -49,9 +49,11 @@ public class Function extends GlobalValue {
         }
         stringBuilder.append(") {\n");
         for (BasicBlock block : basicBlockArrayList) {
-            for (Instruction instruction : block.getInstructionArrayList()) {
-                stringBuilder.append("\t" + instruction.toString() + '\n');
+            int labelId = block.getLabelRegister().getId();
+            if (labelId != this.argumentArrayList.size()) {
+                stringBuilder.append(block.getLabelRegister().getId() + ":\n");
             }
+            stringBuilder.append(block);
         }
         stringBuilder.append("}\n");
         return stringBuilder.toString();

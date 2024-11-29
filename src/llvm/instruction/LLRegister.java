@@ -4,18 +4,19 @@ package llvm.instruction;
 import llvm.RetType;
 
 public class LLRegister {
-    private int id;
+    private Label id;
+    private String name;
     private int valueInt;
     private char valueChar;
     private RetType valueType;
     private RegisterType registerType;
 
     public LLRegister(int id) {
-        this.id = id;
+        this.id = new Label(id);
     }
 
     public int getId() {
-        return id;
+        return id.getId();
     }
 
     public int getValueInt() {
@@ -30,15 +31,20 @@ public class LLRegister {
         return registerType;
     }
 
-    public void setValueType(RetType valueType) {
-        this.valueType = valueType;
-    }
-
     public void setRegister(int valueInt, char valueChar, RetType valueType, RegisterType registerType) {
         this.valueInt = valueInt;
         this.valueChar = valueChar;
         this.registerType = registerType;
         this.valueType = valueType;
+    }
+
+
+    public void setRegister(int valueInt, char valueChar, RetType valueType, RegisterType registerType, String name) {
+        this.valueInt = valueInt;
+        this.valueChar = valueChar;
+        this.registerType = registerType;
+        this.valueType = valueType;
+        this.name = name;
     }
 
     public int getRealValue() {
@@ -88,12 +94,16 @@ public class LLRegister {
         } else if (registerType == RegisterType.TEMP) {
             return " %" + id;
         } else if (registerType == RegisterType.GLOBAL) {
-            return "* @" + (char) (id + 'a' - 1);
+            return "* @" + name;
         } else if (registerType == RegisterType.POINT) {
             return "* %" + id; // * is put in Instr
         } else {
             System.out.println("Error: Register type wrong");
             return "Error";
         }
+    }
+
+    public void setId(int id) {
+        this.id.setId(id);
     }
 }

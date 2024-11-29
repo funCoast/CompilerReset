@@ -3,10 +3,12 @@ package llvm.instruction;
 import llvm.Instruction;
 
 public class AllocaInstr extends Instruction {
-    LLRegister llRegister;
+    private LLRegister llRegister;
+    private int size;
 
-    public AllocaInstr(LLRegister llRegister) {
+    public AllocaInstr(LLRegister llRegister, int size) {
         this.llRegister = llRegister;
+        this.size = size;
     }
 
     public LLRegister getLlRegister() {
@@ -15,6 +17,13 @@ public class AllocaInstr extends Instruction {
 
     @Override
     public String toString() {
-        return "%" + llRegister.getId() + " = " + "alloca " + llRegister.getValueType();
+        if (size > 1) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("%" + llRegister.getId() + " = " + "alloca ");
+            stringBuilder.append("[" + size + "x " + llRegister.getValueType() + "]");
+            return stringBuilder.toString();
+        } else {
+            return "%" + llRegister.getId() + " = " + "alloca " + llRegister.getValueType();
+        }
     }
 }
