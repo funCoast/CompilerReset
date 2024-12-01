@@ -20,7 +20,7 @@ public class AllocaInstr extends Instruction {
         if (size > 1) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("%" + llRegister.getId() + " = " + "alloca ");
-            stringBuilder.append("[" + size + "x " + llRegister.getValueType() + "]");
+            stringBuilder.append("[" + size + " x " + llRegister.getValueType().toBasic() + "]");
             return stringBuilder.toString();
         } else {
             return "%" + llRegister.getId() + " = " + "alloca " + llRegister.getValueType();

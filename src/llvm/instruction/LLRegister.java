@@ -65,6 +65,7 @@ public class LLRegister {
         this.valueChar = llRegister.valueChar;
         this.registerType = llRegister.registerType;
         this.valueType = llRegister.valueType;
+        this.name = llRegister.name;
     }
 
     public void assignByReg(LLRegister llRegister) {
@@ -73,11 +74,15 @@ public class LLRegister {
         this.valueType = llRegister.valueType;
     }
 
+    public void setValueType(RetType valueType) {
+        this.valueType = valueType;
+    }
+
     public void setRegisterType(RegisterType registerType) {
         this.registerType = registerType;
     }
 
-    public void doNot() {
+    public void doSubSelf() {
         if (registerType == RegisterType.NUM) {
             this.valueInt = -this.valueInt;
         } else if (registerType == RegisterType.CHAR) {
@@ -95,7 +100,7 @@ public class LLRegister {
             return " %" + id;
         } else if (registerType == RegisterType.GLOBAL) {
             return "* @" + name;
-        } else if (registerType == RegisterType.POINT) {
+        } else if (registerType == RegisterType.POINT || registerType == RegisterType.P_POINT) {
             return "* %" + id; // * is put in Instr
         } else {
             System.out.println("Error: Register type wrong");

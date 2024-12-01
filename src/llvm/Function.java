@@ -1,5 +1,7 @@
 package llvm;
 
+import llvm.instruction.ReturnInstr;
+
 import java.util.ArrayList;
 
 public class Function extends GlobalValue {
@@ -31,6 +33,10 @@ public class Function extends GlobalValue {
         this.argumentArrayList.add(argument);
     }
 
+    public void removeBasicBlock(BasicBlock block) {
+        this.basicBlockArrayList.remove(block);
+    }
+
     @Override
     public String toString() {
         String ret = retType.toString();
@@ -54,6 +60,11 @@ public class Function extends GlobalValue {
                 stringBuilder.append(block.getLabelRegister().getId() + ":\n");
             }
             stringBuilder.append(block);
+        }
+        BasicBlock newestBlock = basicBlockArrayList.get(basicBlockArrayList.size() - 1);
+        if (!(newestBlock.getNewestInstr() instanceof ReturnInstr)) {
+            newestBlock.insertInstr(new ReturnInstr(null, RetType.VOID));
+            stringBuilder.append("\t" + newestBlock.getNewestInstr() + '\n');
         }
         stringBuilder.append("}\n");
         return stringBuilder.toString();

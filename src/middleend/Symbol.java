@@ -15,7 +15,7 @@ public class Symbol {
 
     private int arraySize;
 
-    public Symbol(int tableId, String name, IdentType identType, FuncInfo funcInfo , int arraySize) {
+    public Symbol(int tableId, String name, IdentType identType, FuncInfo funcInfo, int arraySize) {
         this.tableId = tableId;
         this.name = name;
         this.identType = identType;
@@ -42,6 +42,11 @@ public class Symbol {
     public boolean isConst() {
         return identType == IdentType.ConstIntArray || identType == IdentType.ConstCharArray
                 || identType == IdentType.ConstInt || identType == IdentType.ConstChar;
+    }
+
+    public boolean isArray() {
+        return identType == IdentType.ConstIntArray || identType == IdentType.ConstCharArray
+                || identType == IdentType.IntArray || identType == IdentType.CharArray;
     }
 
     public FuncInfo getFuncInfo() {

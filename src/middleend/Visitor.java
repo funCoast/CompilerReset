@@ -77,6 +77,7 @@ public class Visitor {
             visitDecl(decl);
         }
         for (FuncDef funcDef : funcDefArrayList) {
+            washRegNumber();
             visitFuncDef(funcDef);
         }
         isGlobal = false;
@@ -120,38 +121,45 @@ public class Visitor {
             LLRegister sizeReg = new LLRegister(-1);
             visitExp(varDef.getConstExp(), sizeReg); // get size
             symbol.setArraySize(sizeReg.getRealValue());
+            ArrayList<LLRegister> valueArrayList = new ArrayList<>();
             if (varDef.getInitVal() != null) {
-                ArrayList<LLRegister> valueArrayList = new ArrayList<>();
                 visitInitVal(varDef.getInitVal(), valueArrayList); // get initValue
-                while (valueArrayList.size() < sizeReg.getRealValue()) {
-                    LLRegister temReg = new LLRegister(-1);
-                    temReg.setRegister(0, (char) 0, getValueRetType(symbol.getIdentType()), RegisterType.NUM);
-                    valueArrayList.add(new LLRegister(-1));
+            }
+            while (valueArrayList.size() < sizeReg.getRealValue()) {
+                LLRegister temReg = new LLRegister(-1);
+                temReg.setRegister(0, (char) 0, getValueRetType(symbol.getIdentType()), RegisterType.NUM);
+                valueArrayList.add(temReg);
+            }
+            //set:
+            if (isGlobal) {
+                LLRegister targetRegister = new LLRegister(-1);
+                targetRegister.setRegister(0, '0', getValueRetType(symbol.getIdentType()).toPoint(), RegisterType.GLOBAL, ident);
+                ArrayList<Integer> integerArrayList = new ArrayList<>();
+                for (LLRegister register : valueArrayList) {
+                    integerArrayList.add(register.getRealValue());
                 }
-                //set:
-                if (isGlobal) {
-                    LLRegister targetRegister = new LLRegister(-1);
-                    targetRegister.setRegister(0, '0', getValueRetType(symbol.getIdentType()), RegisterType.GLOBAL, ident);
-                    ArrayList<Integer> integerArrayList = new ArrayList<>();
-                    for (LLRegister register : valueArrayList) {
-                        integerArrayList.add(register.getRealValue());
-                    }
-                    GlobalVariable globalVariable = new GlobalVariable(ident, getValueRetType(symbol.getIdentType()), integerArrayList);
-                    symbol.setLlRegister(targetRegister);
-                    module.insertGlobalValue(globalVariable);
-                } else {
-                    LLRegister targetRegister = getNewReg();
-                    targetRegister.setRegister(0, '0', getValueRetType(bType.getIdentType()), RegisterType.POINT);
-                    curBasicBlock.insertInstr(new AllocaInstr(targetRegister, sizeReg.getRealValue()));
-                    for
-                    storeValueToPoint(targetRegister, saveRegister); // generate store instr, can justify type
-                    symbol.setLlRegister(targetRegister);
+                GlobalVariable globalVariable = new GlobalVariable(ident, getValueRetType(symbol.getIdentType()), integerArrayList);
+                symbol.setLlRegister(targetRegister);
+                module.insertGlobalValue(globalVariable);
+            } else {
+                LLRegister targetRegister = getNewReg();
+                targetRegister.setRegister(0, '0', getValueRetType(bType.getIdentType()).toPoint(), RegisterType.POINT);
+                curBasicBlock.insertInstr(new AllocaInstr(targetRegister, sizeReg.getRealValue()));
+                LLRegister retReg;
+                for (int i = 0; i < sizeReg.getRealValue(); i++) {
+                    retReg = getNewReg();
+                    retReg.setRegister(0, '0', getValueRetType(bType.getIdentType()), RegisterType.POINT);
+                    LLRegister numReg = new LLRegister(-1);
+                    numReg.setRegister(i, (char) i, getValueRetType(bType.getIdentType()), RegisterType.NUM);
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(targetRegister, retReg, getValueRetType(bType.getIdentType()), numReg, sizeReg.getRealValue()));
+                    storeValueToPoint(retReg, valueArrayList.get(i));
                 }
+                symbol.setLlRegister(targetRegister);
             }
         } else {
             // not array
             if (varDef.getInitVal() != null) {
-                LLRegister saveRegister = visitInitVal(varDef.getInitVal(), null);
+                LLRegister saveRegister = visitInitVal(varDef.getInitVal(), new ArrayList<>());
                 if (isGlobal) {
                     int initValue = saveRegister.getRealValue();
                     LLRegister llRegister = new LLRegister(-1);
@@ -173,10 +181,25 @@ public class Visitor {
                     symbol.setLlRegister(targetRegister);
                 }
             } else {
-                LLRegister register = getNewReg();
-                register.setRegister(0, '0', getValueRetType(bType.getIdentType()), RegisterType.POINT);
-                symbol.setLlRegister(register);
-                curBasicBlock.insertInstr(new AllocaInstr(register, 1));
+                if (isGlobal) {
+                    int initValue = 0;
+                    LLRegister llRegister = new LLRegister(-1);
+                    GlobalVariable globalVariable;
+                    if (symbol.getIdentType() == IdentType.Char) {
+                        llRegister.setRegister(0, (char) initValue, RetType.i8, RegisterType.GLOBAL, ident);
+                        globalVariable = new GlobalVariable(ident, 0, (char) initValue, RetType.i8);
+                    } else {
+                        llRegister.setRegister(initValue, '0', RetType.i32, RegisterType.GLOBAL, ident);
+                        globalVariable = new GlobalVariable(ident, initValue, '0', RetType.i32);
+                    }
+                    symbol.setLlRegister(llRegister);
+                    module.insertGlobalValue(globalVariable);
+                } else {
+                    LLRegister register = getNewReg();
+                    register.setRegister(0, '0', getValueRetType(bType.getIdentType()), RegisterType.POINT);
+                    symbol.setLlRegister(register);
+                    curBasicBlock.insertInstr(new AllocaInstr(register, 1));
+                }
             }
         }
     }
@@ -186,22 +209,16 @@ public class Visitor {
         if (initVal.isString()) {
             String str = initVal.getStringConst();
             for (int i = 0; i < str.length(); i++) {
-                LLRegister temReg = getNewReg();
+                LLRegister temReg = new LLRegister(-1);
                 temReg.setRegister(str.charAt(i), str.charAt(i), RetType.i8, RegisterType.CHAR);
                 valueArrayList.add(temReg);
             }
         } else {
             ArrayList<Exp> expArrayList = initVal.getExpArrayList();
-            boolean isArray = false;
-            if (expArrayList.size() > 1) {
-                isArray = true;
-            }
             for (Exp exp : expArrayList) {
                 saveRegister = new LLRegister(-1);
                 visitExp(exp, saveRegister);
-                if (isArray) {
-                    valueArrayList.add(saveRegister);
-                }
+                valueArrayList.add(saveRegister);
             }
         }
         return saveRegister;
@@ -249,7 +266,7 @@ public class Visitor {
             int initValue = saveRegister.getRealValue();
             LLRegister targetRegister = new LLRegister(-1);
             GlobalVariable globalVariable;
-            if (symbol.getIdentType() == IdentType.Char) {
+            if (symbol.getIdentType() == IdentType.Char || symbol.getIdentType() == IdentType.ConstChar) {
                 targetRegister.setRegister(0, (char) initValue, RetType.i8, RegisterType.GLOBAL, ident);
                 globalVariable = new GlobalVariable(ident, 0, (char) initValue, RetType.i8);
             } else {
@@ -275,6 +292,7 @@ public class Visitor {
                 isArray = true;
             }
             for (Exp exp : expArrayList) {
+                saveRegister = new LLRegister(-1);
                 visitExp(exp, saveRegister);
                 if (isArray) {
                     valueArrayList.add(saveRegister.getRealValue());
@@ -299,7 +317,7 @@ public class Visitor {
         module.getFunctionArrayList().add(function);
         curFunction = function;
         // ^^^ insert symbol
-
+        isGlobal = false;
         pushNewTable();
         BasicBlock basicBlock = new BasicBlock(new LLRegister(-1));
         curBasicBlock = basicBlock;
@@ -308,7 +326,11 @@ public class Visitor {
         for (FuncFParam funcFParam : funcFParamArrayList) {
             LLRegister argumentReg = getNewReg();
             RetType retType = getValueRetType(funcFParam.getbType().getIdentType());
-            argumentReg.setRegister(0, '0', retType, RegisterType.TEMP);
+            if (funcFParam.isArray()) {
+                argumentReg.setRegister(0, '0', retType, RegisterType.P_POINT);
+            } else {
+                argumentReg.setRegister(0, '0', retType, RegisterType.TEMP);
+            }
             function.insertArgument(new Argument(argumentReg.getId(), retType, argumentReg));
         }
         curBasicBlock.setLabelRegister(getNewReg()); // set for BasicBlock
@@ -318,6 +340,7 @@ public class Visitor {
         visitBlock(funcDef.getBlock(), identType, true, null, null);
         washRegNumber();
         popCurTable();
+        isGlobal = true;
     }
 
     private void visitFuncFParam(FuncFParam funcFParam, Argument argument) {
@@ -326,12 +349,16 @@ public class Visitor {
         searchInCurTable(ident, identLine);
         RetType argueRetType = getValueRetType(funcFParam.getbType().getIdentType());
         Symbol argueSymbol = new Symbol(symbolTableArrayList.indexOf(curSymbolTable) + 1,
-                funcFParam.getIdent(), funcFParam.getbType().getIdentType(), null);
+                funcFParam.getIdent(), funcFParam.getbType().getIdentType(), null, 0);
         //
         LLRegister pointRegister = getNewReg();
-        pointRegister.setRegister(0, '0', argueRetType, RegisterType.POINT);
+        if (funcFParam.isArray()) {
+            pointRegister.setRegister(0, '0', argueRetType.toPoint(), RegisterType.P_POINT);
+        } else {
+            pointRegister.setRegister(0, '0', argueRetType, RegisterType.POINT);
+        }
         // TODO
-        curBasicBlock.insertInstr(new AllocaInstr(pointRegister));
+        curBasicBlock.insertInstr(new AllocaInstr(pointRegister, 1));
         // define pointReg to store argument value
         curBasicBlock.insertInstr(new StoreInstr(argument.getArgumentReg(), pointRegister));
         // insert targetReg to use Argument
@@ -413,7 +440,7 @@ public class Visitor {
         LLRegister expRegister = new LLRegister(-1);
         visitExp(blockItem.getExp(), expRegister);
 
-        storeValueToPoint(targetRegister, expRegister); // generate store instr, can justify type
+        storeValueToPoint(primaryRegister, expRegister); // generate store instr, can justify type
     }
 
     private void visitStmt_Exp(Stmt_Exp blockItem) {
@@ -441,7 +468,7 @@ public class Visitor {
         visitStmt(stmtIf, identType, top_label_add, top_label_next);
         if (blockItem.hasElse()) {
             Instruction instr = curBasicBlock.getNewestInstr();
-            if (! (instr instanceof BrInstr)) {
+            if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
                 curBasicBlock.insertInstr(new BrInstr(label_next));
             }
             putRegNew(label_else);
@@ -450,7 +477,7 @@ public class Visitor {
             visitStmt(stmtElse, identType, top_label_add, top_label_next);
         }
         Instruction instr = curBasicBlock.getNewestInstr();
-        if (! (instr instanceof BrInstr)) {
+        if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
             curBasicBlock.insertInstr(new BrInstr(label_next));
         }
         putRegNew(label_next);
@@ -467,7 +494,7 @@ public class Visitor {
             visitStmt_Assign(blockItem.getStmtForInit());
         }
         Instruction instr = curBasicBlock.getNewestInstr();
-        if (! (instr instanceof BrInstr)) {
+        if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
             curBasicBlock.insertInstr(new BrInstr(label_cond));
         }
         // get into judge block:
@@ -483,7 +510,7 @@ public class Visitor {
         visitStmt(blockItem.getStmtDo(), identType, label_add, label_next);
         this.countForCircle--;
         instr = curBasicBlock.getNewestInstr();
-        if (! (instr instanceof BrInstr)) {
+        if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
             curBasicBlock.insertInstr(new BrInstr(label_add));
         }
         // get into add block:
@@ -493,7 +520,7 @@ public class Visitor {
             visitStmt_Assign(blockItem.getStmtForAdd());
         }
         instr = curBasicBlock.getNewestInstr();
-        if (! (instr instanceof BrInstr)) {
+        if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
             curBasicBlock.insertInstr(new BrInstr(label_cond));
         }
         // get into next block:
@@ -506,7 +533,7 @@ public class Visitor {
             dealError('m', callLine);
         } else {
             Instruction instr = curBasicBlock.getNewestInstr();
-            if (! (instr instanceof BrInstr)) {
+            if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
                 curBasicBlock.insertInstr(new BrInstr(label_next));
             }
         }
@@ -517,7 +544,7 @@ public class Visitor {
             dealError('m', callLine);
         } else {
             Instruction instr = curBasicBlock.getNewestInstr();
-            if (! (instr instanceof BrInstr)) {
+            if (! (instr instanceof BrInstr || instr instanceof ReturnInstr)) {
                 curBasicBlock.insertInstr(new BrInstr(label_add));
             }
         }
@@ -664,22 +691,71 @@ public class Visitor {
             }
         }
         if (lVal.isArray()) {
-            if (lVal.getExp() != null) {
-                LLRegister expRegister = null;
-                visitExp(lVal.getExp(), expRegister);
-                identType = goBasic(identType);
-            }
+            identType = goBasic(identType);
         }
         //
-        LLRegister llRegister = symbol.getLlRegister();
-        if (needGetValue) { // IF need value, should LOAD first.
-            LLRegister saveRegister = getNewReg();
-            saveRegister.assignByReg(llRegister); // careful not assign RegType
-            saveRegister.setRegisterType(RegisterType.TEMP);
-            lValRegister.setByReg(saveRegister);
-            curBasicBlock.insertInstr(new LoadInstr(saveRegister, llRegister, InstructionType.LOAD));
+        if (symbol.isArray()) {
+            // is arraying
+            if (lVal.getExp() != null) {
+                // get index
+                LLRegister indexRegister = new LLRegister(-1);
+                visitExp(lVal.getExp(), indexRegister);
+                // get array:
+                LLRegister arrayRegister = new LLRegister(-1);
+                if (symbol.getLlRegister().getRegisterType() == RegisterType.P_POINT) {
+                    arrayRegister = getNewReg();
+                    arrayRegister.setRegister(0, '0', getValueRetType(identType).toPoint(), RegisterType.POINT);
+                    curBasicBlock.insertInstr(new LoadInstr(arrayRegister, symbol.getLlRegister(), InstructionType.LOAD));
+                }
+                // get adr:
+                LLRegister adrRegister = getNewReg();
+                adrRegister.setRegister(0, '0', getValueRetType(identType), RegisterType.POINT);
+                if (symbol.getLlRegister().getRegisterType() == RegisterType.P_POINT) {
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(adrRegister, arrayRegister, adrRegister.getValueType(), indexRegister));
+                } else {
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(symbol.getLlRegister(), adrRegister, adrRegister.getValueType(), indexRegister, symbol.getArraySize()));
+                }
+                if (needGetValue) { // IF need value, should LOAD first.
+                    LLRegister getValueReg = getNewReg();
+                    getValueReg.setRegister(0, '0', getValueRetType(identType), RegisterType.TEMP);
+                    curBasicBlock.insertInstr(new LoadInstr(getValueReg, adrRegister, InstructionType.LOAD));
+                    lValRegister.setByReg(getValueReg);
+                } else {
+                    lValRegister.setByReg(adrRegister);
+                }
+            } else {
+                // no exp/ no defined index:
+                LLRegister arrayRegister = new LLRegister(-1);
+                if (symbol.getLlRegister().getRegisterType() == RegisterType.P_POINT) {
+                    arrayRegister = getNewReg();
+                    arrayRegister.setRegister(0, '0', getValueRetType(identType).toPoint(), RegisterType.POINT);
+                    curBasicBlock.insertInstr(new LoadInstr(arrayRegister, symbol.getLlRegister(), InstructionType.LOAD));
+                }
+                LLRegister adrRegister = getNewReg();
+                adrRegister.setRegister(0, '0', getValueRetType(identType), RegisterType.POINT);
+                if (symbol.getLlRegister().getRegisterType() == RegisterType.P_POINT) {
+                    LLRegister numReg = new LLRegister(-1);
+                    numReg.setRegister(0, (char) 0, RetType.i32, RegisterType.NUM);
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(adrRegister, arrayRegister, adrRegister.getValueType(), numReg));
+                } else {
+                    LLRegister numReg = new LLRegister(-1);
+                    numReg.setRegister(0, (char) 0, RetType.i32, RegisterType.NUM);
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(adrRegister, symbol.getLlRegister(), adrRegister.getValueType(), numReg));
+                }
+                lValRegister.setByReg(adrRegister);
+            }
         } else {
-            lValRegister.setByReg(llRegister);
+            // not array
+            LLRegister llRegister = symbol.getLlRegister();
+            if (needGetValue) { // IF need value, should LOAD first.
+                LLRegister saveRegister = getNewReg();
+                saveRegister.assignByReg(llRegister); // careful not assign RegType
+                saveRegister.setRegisterType(RegisterType.TEMP);
+                curBasicBlock.insertInstr(new LoadInstr(saveRegister, llRegister, InstructionType.LOAD));
+                lValRegister.setByReg(saveRegister);
+            } else {
+                lValRegister.setByReg(llRegister);
+            }
         }
         return identType;
     }
@@ -772,6 +848,7 @@ public class Visitor {
         LLRegister primaryRegister = new LLRegister(-1);
         //
         if (unaryExp.isFuncCall()) {
+            // it's funcCall
             IdentType identType = null;
             String ident = unaryExp.getIdent();
             int identLine = unaryExp.getIdentLine();
@@ -830,12 +907,12 @@ public class Visitor {
             curBasicBlock.insertInstr(new CallInstr(retType,llRegister , ident,argumentRegList));
             return adaptIdentType(identType, identTypeReturn);
         } else {
+            // not funcCall:
             LLRegister saveRegister = new LLRegister(-1);
             IdentType identType = visitPrimaryExp(unaryExp.getPrimaryExp(), primaryRegister);
-            saveRegister.setByReg(primaryRegister);
             if (operation == Operation.SUB) {
                 if (isNumber(primaryRegister)) { // try calculate:
-                    primaryRegister.doNot();
+                    primaryRegister.doSubSelf();
                     saveRegister.setByReg(primaryRegister);
                 } else {
                     LLRegister newRegister = getNewReg();
@@ -845,6 +922,18 @@ public class Visitor {
                     curBasicBlock.insertInstr(new BinaryInstr(newRegister, numRegister, primaryRegister, InstructionType.sub));
                     saveRegister.setByReg(newRegister);
                 }
+            } else if (operation == Operation.NOT) {
+                LLRegister resReg = getNewReg(); // 接受结果
+                resReg.setRegister(0, '0', RetType.i1, RegisterType.TEMP);
+                LLRegister zeroReg = new LLRegister(-1);
+                zeroReg.setRegister(0, (char) 0, saveRegister.getValueType(), RegisterType.NUM); // num or char is same, we set 0 both
+                curBasicBlock.insertInstr(new IcmpInstr(resReg, primaryRegister, zeroReg, primaryRegister.getValueType(), Compare.EQUAL));
+                LLRegister proReg = getNewReg();
+                proReg.setRegister(0, (char) 0, primaryRegister.getValueType(), RegisterType.TEMP);
+                curBasicBlock.insertInstr(new ZextInstr(proReg, resReg));
+                saveRegister.setByReg(proReg);
+            } else {
+                saveRegister.setByReg(primaryRegister);
             }
             unaryRegister.setByReg(saveRegister);
             return adaptIdentType(identType, identTypeReturn);
@@ -1135,13 +1224,14 @@ public class Visitor {
                 hasNot = !hasNot;
             }
         }
-        if (isSub) {
-            return Operation.SUB;
+        if (hasNot) {
+            return Operation.NOT;
         } else {
-            if (hasNot) {
-                return Operation.NOT;
+            if (isSub) {
+                return Operation.SUB;
+            } else {
+                return Operation.ADD;
             }
-            return Operation.ADD;
         }
     }
 
@@ -1193,6 +1283,7 @@ public class Visitor {
     private void storeValueToPoint(LLRegister targetRegister, LLRegister saveRegister) {
         // adjust type of value, to adapt to store in Reg;
         if (saveRegister.getRegisterType() == RegisterType.NUM || saveRegister.getRegisterType() == RegisterType.CHAR) {
+            saveRegister.setValueType(targetRegister.getValueType());
             curBasicBlock.insertInstr(new StoreInstr(saveRegister, targetRegister));
             return;
         } // such value no need change type
@@ -1238,6 +1329,12 @@ public class Visitor {
     }
 
     private void intoNewBasicBlock(LLRegister label) {
+        if (curBasicBlock.isEmpty()) {
+            LLRegister labelReg = curBasicBlock.getLabelRegister();
+            labelReg.setByReg(label);
+            registerArrayList.remove(labelReg);
+            curFunction.removeBasicBlock(curBasicBlock);
+        }
         BasicBlock basicBlock = new BasicBlock(label);
         curBasicBlock = basicBlock;
         curFunction.insertBasicBlock(basicBlock);

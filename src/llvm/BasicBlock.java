@@ -1,6 +1,7 @@
 package llvm;
 
 import llvm.instruction.LLRegister;
+import llvm.instruction.ReturnInstr;
 
 import java.util.ArrayList;
 
@@ -37,11 +38,19 @@ public class BasicBlock extends Value {
         }
     }
 
+    public boolean isEmpty() {
+        return instructionArrayList.isEmpty();
+    }
+
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         for (Instruction instruction : instructionArrayList) {
             stringBuilder.append("\t" + instruction.toString() + '\n');
+        }
+        if (instructionArrayList.isEmpty()) {
+            instructionArrayList.add(new ReturnInstr(null, RetType.VOID));
+            stringBuilder.append("\t" + instructionArrayList.get(0) + '\n');
         }
         return stringBuilder.toString();
     }

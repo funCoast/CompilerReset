@@ -6,4 +6,5 @@ public enum RegisterType {
     TEMP,
     GLOBAL,
     POINT,
+    P_POINT
 }

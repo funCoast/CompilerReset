@@ -14,6 +14,6 @@ public class ZextInstr extends Instruction {
     @Override
     public String toString() {
         //%8 = zext i8 %6 to i32
-        return "%" + retRegister.getId() + " = zext i8 %" + extRegister.getId() + " to i32";
+        return "%" + retRegister.getId() + " = zext " + extRegister.getValueType() + " %" + extRegister.getId() + " to " + retRegister.getValueType();
     }
 }

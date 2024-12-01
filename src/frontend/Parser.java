@@ -386,8 +386,10 @@ public class Parser {
         int identLine = curToken.getLineNumber();
         String ident = curToken.getName();
         curToken = nextToken(); // skip ident
+        boolean isArray = false;
         if (curToken.getLexType() == LexType.LBRACK) {
             bType.setIdentType(bType.setArray());
+            isArray = true;
             curToken = nextToken(); // skip [
             if (curToken.getLexType() != LexType.RBRACK) {
                 dealError('k');
@@ -396,7 +398,7 @@ public class Parser {
             }
         }
         outputType("<FuncFParam>");
-        return new FuncFParam(bType, ident, identLine);
+        return new FuncFParam(bType, ident, identLine, isArray);
     }
 
     private FuncType parseFuncType() {
