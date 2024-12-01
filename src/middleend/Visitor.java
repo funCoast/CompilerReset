@@ -73,6 +73,7 @@ public class Visitor {
         pushNewTable();
         ArrayList<Decl> declArrayList = compUnit.getDeclArrayList();
         ArrayList<FuncDef> funcDefArrayList = compUnit.getFuncDefArrayList();
+        curBasicBlock = new BasicBlock(new LLRegister(-1)); // for None use, only for insertInstr safe;
         for (Decl decl : declArrayList) {
             visitDecl(decl);
         }
@@ -127,7 +128,7 @@ public class Visitor {
             }
             while (valueArrayList.size() < sizeReg.getRealValue()) {
                 LLRegister temReg = new LLRegister(-1);
-                temReg.setRegister(0, (char) 0, getValueRetType(symbol.getIdentType()), RegisterType.NUM);
+                temReg.setRegister(0, '\0', getValueRetType(symbol.getIdentType()), RegisterType.NUM);
                 valueArrayList.add(temReg);
             }
             //set:
@@ -208,7 +209,7 @@ public class Visitor {
         LLRegister saveRegister = new LLRegister(-1);
         if (initVal.isString()) {
             String str = initVal.getStringConst();
-            for (int i = 0; i < str.length(); i++) {
+            for (int i = 1; i < str.length() - 1; i++) { // skip \" and \"
                 LLRegister temReg = new LLRegister(-1);
                 temReg.setRegister(str.charAt(i), str.charAt(i), RetType.i8, RegisterType.CHAR);
                 valueArrayList.add(temReg);
@@ -246,57 +247,84 @@ public class Visitor {
         insertSymbol(symbol);
         // ^^^ insert symbol
         if (constDef.isArray()) {
+            // isArray
             LLRegister sizeReg = new LLRegister(-1);
             visitExp(constDef.getConstExp(), sizeReg); // get size
             symbol.setArraySize(sizeReg.getRealValue());
-            ArrayList<Integer> valueArrayList = new ArrayList<>();
+            ArrayList<LLRegister> valueArrayList = new ArrayList<>();
             visitConstInitVal(constDef.getConstInitVal(), valueArrayList); // get initValue
             while (valueArrayList.size() < sizeReg.getRealValue()) {
-                valueArrayList.add(0);
+                LLRegister temReg = new LLRegister(-1);
+                temReg.setRegister(0, '\0', getValueRetType(symbol.getIdentType()), RegisterType.NUM);
+                valueArrayList.add(temReg);
             }
             //set:
-            LLRegister targetRegister = new LLRegister(-1);
-            targetRegister.setRegister(0, '0', getValueRetType(symbol.getIdentType()), RegisterType.GLOBAL, ident);
-            GlobalVariable globalVariable = new GlobalVariable(ident, getValueRetType(symbol.getIdentType()), valueArrayList);
-            symbol.setLlRegister(targetRegister);
-            module.insertGlobalValue(globalVariable);
-
-        } else {
-            LLRegister saveRegister = visitConstInitVal(constDef.getConstInitVal(), null);
-            int initValue = saveRegister.getRealValue();
-            LLRegister targetRegister = new LLRegister(-1);
-            GlobalVariable globalVariable;
-            if (symbol.getIdentType() == IdentType.Char || symbol.getIdentType() == IdentType.ConstChar) {
-                targetRegister.setRegister(0, (char) initValue, RetType.i8, RegisterType.GLOBAL, ident);
-                globalVariable = new GlobalVariable(ident, 0, (char) initValue, RetType.i8);
+            if (isGlobal) {
+                LLRegister targetRegister = new LLRegister(-1);
+                targetRegister.setRegister(0, '0', getValueRetType(symbol.getIdentType()).toPoint(), RegisterType.GLOBAL, ident);
+                ArrayList<Integer> integerArrayList = new ArrayList<>();
+                for (LLRegister register : valueArrayList) {
+                    integerArrayList.add(register.getRealValue());
+                }
+                GlobalVariable globalVariable = new GlobalVariable(ident, getValueRetType(symbol.getIdentType()), integerArrayList);
+                symbol.setLlRegister(targetRegister);
+                module.insertGlobalValue(globalVariable);
             } else {
-                targetRegister.setRegister(initValue, '0', RetType.i32, RegisterType.GLOBAL, ident);
-                globalVariable = new GlobalVariable(ident, initValue, '0', RetType.i32);
+                LLRegister targetRegister = getNewReg();
+                targetRegister.setRegister(0, '0', getValueRetType(bType.getIdentType()).toPoint(), RegisterType.POINT);
+                curBasicBlock.insertInstr(new AllocaInstr(targetRegister, sizeReg.getRealValue()));
+                LLRegister retReg;
+                for (int i = 0; i < sizeReg.getRealValue(); i++) {
+                    retReg = getNewReg();
+                    retReg.setRegister(0, '0', getValueRetType(bType.getIdentType()), RegisterType.POINT);
+                    LLRegister numReg = new LLRegister(-1);
+                    numReg.setRegister(i, (char) i, getValueRetType(bType.getIdentType()), RegisterType.NUM);
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(targetRegister, retReg, getValueRetType(bType.getIdentType()), numReg, sizeReg.getRealValue()));
+                    storeValueToPoint(retReg, valueArrayList.get(i));
+                }
+                symbol.setLlRegister(targetRegister);
             }
-            symbol.setLlRegister(targetRegister);
-            module.insertGlobalValue(globalVariable);
+        } else {
+            // not array
+            LLRegister saveRegister = visitConstInitVal(constDef.getConstInitVal(), new ArrayList<>());
+            if (isGlobal) {
+                int initValue = saveRegister.getRealValue();
+                LLRegister llRegister = new LLRegister(-1);
+                GlobalVariable globalVariable;
+                if (symbol.getIdentType() == IdentType.Char || symbol.getIdentType() == IdentType.ConstChar) {
+                    llRegister.setRegister(0, (char) initValue, RetType.i8, RegisterType.GLOBAL, ident);
+                    globalVariable = new GlobalVariable(ident, 0, (char) initValue, RetType.i8);
+                } else {
+                    llRegister.setRegister(initValue, '0', RetType.i32, RegisterType.GLOBAL, ident);
+                    globalVariable = new GlobalVariable(ident, initValue, '0', RetType.i32);
+                }
+                symbol.setLlRegister(llRegister);
+                module.insertGlobalValue(globalVariable);
+            } else {
+                LLRegister targetRegister = getNewReg();
+                targetRegister.setRegister(0, '0', getValueRetType(bType.getIdentType()), RegisterType.POINT);
+                curBasicBlock.insertInstr(new AllocaInstr(targetRegister, 1));
+                storeValueToPoint(targetRegister, saveRegister); // generate store instr, can justify type
+                symbol.setLlRegister(targetRegister);
+            }
         }
     }
 
-    private LLRegister visitConstInitVal(ConstInitVal constInitVal, ArrayList<Integer> valueArrayList) {
+    private LLRegister visitConstInitVal(ConstInitVal constInitVal, ArrayList<LLRegister> valueArrayList) {
         LLRegister saveRegister = new LLRegister(-1);
         if (constInitVal.isString()) {
             String str = constInitVal.getStringConst();
-            for (int i = 0; i < str.length(); i++) {
-                valueArrayList.add((int) str.charAt(i));
+            for (int i = 1; i < str.length() - 1; i++) { // skip \" and \"
+                LLRegister temReg = new LLRegister(-1);
+                temReg.setRegister(str.charAt(i), str.charAt(i), RetType.i8, RegisterType.CHAR);
+                valueArrayList.add(temReg);
             }
         } else {
             ArrayList<Exp> expArrayList = constInitVal.getExpArrayList();
-            boolean isArray = false;
-            if (expArrayList.size() > 1) {
-                isArray = true;
-            }
             for (Exp exp : expArrayList) {
                 saveRegister = new LLRegister(-1);
                 visitExp(exp, saveRegister);
-                if (isArray) {
-                    valueArrayList.add(saveRegister.getRealValue());
-                }
+                valueArrayList.add(saveRegister);
             }
         }
         return saveRegister;
@@ -711,7 +739,7 @@ public class Visitor {
                 LLRegister adrRegister = getNewReg();
                 adrRegister.setRegister(0, '0', getValueRetType(identType), RegisterType.POINT);
                 if (symbol.getLlRegister().getRegisterType() == RegisterType.P_POINT) {
-                    curBasicBlock.insertInstr(new GetArrayAdrInstr(adrRegister, arrayRegister, adrRegister.getValueType(), indexRegister));
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(arrayRegister, adrRegister, adrRegister.getValueType(), indexRegister));
                 } else {
                     curBasicBlock.insertInstr(new GetArrayAdrInstr(symbol.getLlRegister(), adrRegister, adrRegister.getValueType(), indexRegister, symbol.getArraySize()));
                 }
@@ -736,11 +764,11 @@ public class Visitor {
                 if (symbol.getLlRegister().getRegisterType() == RegisterType.P_POINT) {
                     LLRegister numReg = new LLRegister(-1);
                     numReg.setRegister(0, (char) 0, RetType.i32, RegisterType.NUM);
-                    curBasicBlock.insertInstr(new GetArrayAdrInstr(adrRegister, arrayRegister, adrRegister.getValueType(), numReg));
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(arrayRegister, adrRegister, adrRegister.getValueType(), numReg));
                 } else {
                     LLRegister numReg = new LLRegister(-1);
                     numReg.setRegister(0, (char) 0, RetType.i32, RegisterType.NUM);
-                    curBasicBlock.insertInstr(new GetArrayAdrInstr(adrRegister, symbol.getLlRegister(), adrRegister.getValueType(), numReg));
+                    curBasicBlock.insertInstr(new GetArrayAdrInstr(symbol.getLlRegister(), adrRegister, adrRegister.getValueType(), numReg, symbol.getArraySize()));
                 }
                 lValRegister.setByReg(adrRegister);
             }
@@ -790,7 +818,7 @@ public class Visitor {
                     mulRegisterLeft = changeTypeTo32(mulRegisterLeft);
                     mulRegisterRight = changeTypeTo32(mulRegisterRight);
                     LLRegister newRegister = getNewReg();
-                    newRegister.setRegister(0, '0', getValueRetType(identType), RegisterType.TEMP);
+                    newRegister.setRegister(0, '0', RetType.i32, RegisterType.TEMP);
                     curBasicBlock.insertInstr(new BinaryInstr(newRegister, mulRegisterLeft, mulRegisterRight, instructionType));
                     mulRegisterLeft = newRegister;
                     saveRegister.setByReg(newRegister);
@@ -831,7 +859,7 @@ public class Visitor {
                     unaryRegisterLeft = changeTypeTo32(unaryRegisterLeft);
                     unaryRegisterRight = changeTypeTo32(unaryRegisterRight);
                     LLRegister newRegister = getNewReg();
-                    newRegister.setRegister(0, '0', getValueRetType(identTypeReturn), RegisterType.TEMP);
+                    newRegister.setRegister(0, '0', RetType.i32, RegisterType.TEMP);
                     curBasicBlock.insertInstr(new BinaryInstr(newRegister, unaryRegisterLeft, unaryRegisterRight, instructionType));
                     unaryRegisterLeft = newRegister;
                     saveRegister.setByReg(newRegister);

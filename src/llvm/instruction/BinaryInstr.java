@@ -36,7 +36,7 @@ public class BinaryInstr extends Instruction {
 
     @Override
     public String toString() {
-        return "%" + retReg.getId() + " = " + instructionType + " " + retReg.getValueType() + optAReg + "," + optBReg;
+        return "%" + retReg.getId() + " = " + instructionType + " i32" + optAReg + "," + optBReg;
     }
 
 
