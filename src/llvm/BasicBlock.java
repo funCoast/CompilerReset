@@ -1,5 +1,6 @@
 package llvm;
 
+import llvm.instruction.BrInstr;
 import llvm.instruction.LLRegister;
 import llvm.instruction.ReturnInstr;
 
@@ -23,7 +24,10 @@ public class BasicBlock extends Value {
     }
 
     public void insertInstr(Instruction instruction) {
-        this.instructionArrayList.add(instruction);
+        Instruction newestInstr = getNewestInstr();
+        if (!(newestInstr instanceof BrInstr || newestInstr instanceof ReturnInstr)) {
+            this.instructionArrayList.add(instruction);
+        }
     }
 
     public void setLabelRegister(LLRegister labelRegister) {

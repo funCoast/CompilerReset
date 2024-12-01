@@ -22,6 +22,6 @@ public class InitVal {
     }
 
     public boolean isString() {
-        return expArrayList == null || expArrayList.isEmpty();
+        return expArrayList == null;
     }
 }

@@ -12,6 +12,6 @@ public class PutChInstr extends Instruction {
     @Override
     public String toString() {
         //call void @putch(i8 %8)
-        return "call void @putch(i32 %" + register.getId() + ")";
+        return "call void @putch(i32" + register + ")";
     }
 }

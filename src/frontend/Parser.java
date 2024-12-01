@@ -463,11 +463,12 @@ public class Parser {
 
     private InitVal parseInitVal() {
         String string = null;
-        ArrayList<Exp> expArrayList = new ArrayList<>();
+        ArrayList<Exp> expArrayList = null;
         if (curToken.getLexType() == LexType.STRCON) {
             string = curToken.getName();
             curToken = nextToken();
         } else if (curToken.getLexType() == LexType.LBRACE) {
+            expArrayList = new ArrayList<>();
             curToken = nextToken(); // skip {
             expArrayList.add(parseExp());
             while (curToken.getLexType() == LexType.COMMA) {
@@ -476,6 +477,7 @@ public class Parser {
             }
             curToken = nextToken(); // skip }
         } else {
+            expArrayList = new ArrayList<>();
             expArrayList.add(parseExp());
         }
         outputType("<InitVal>");
@@ -526,11 +528,12 @@ public class Parser {
 
     private ConstInitVal parseConstInitVal() {
         String string = null;
-        ArrayList<Exp> expArrayList = new ArrayList<>();
+        ArrayList<Exp> expArrayList = null;
         if (curToken.getLexType() == LexType.STRCON) {
             string = curToken.getName();
             curToken = nextToken(); // skip
         } else if (curToken.getLexType() == LexType.LBRACE) {
+            expArrayList = new ArrayList<>();
             curToken = nextToken(); // skip {
             if (curToken.getLexType() != LexType.RBRACE) {
                 expArrayList.add(parseConstExp());
@@ -541,6 +544,7 @@ public class Parser {
             }
             curToken = nextToken(); // skip }
         } else {
+            expArrayList = new ArrayList<>();
             expArrayList.add(parseConstExp());
         }
         outputType("<ConstInitVal>");
@@ -601,6 +605,7 @@ public class Parser {
             ident = unaryExp.getIdent();
             identLine = unaryExp.getIdentLine();
             funcRParamArrayList = unaryExp.getFuncRParams();
+            operationArrayList.addAll(unaryExp.getOperationArrayList());
         } else if (curToken.getLexType() == LexType.IDENFR && readAfterToken(1).getLexType() == LexType.LPARENT) {
             isFuncCall = true;
             identLine = curToken.getLineNumber();

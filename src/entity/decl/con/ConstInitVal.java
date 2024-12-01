@@ -22,6 +22,6 @@ public class ConstInitVal {
     }
 
     public boolean isString() {
-        return expArrayList == null || expArrayList.isEmpty();
+        return expArrayList == null;
     }
 }
