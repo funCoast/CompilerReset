@@ -13,6 +13,35 @@ public class LLRegister {
     private RetType valueType;
     private RegisterType registerType;
     private ArrayList<Integer> valueArrayList;
+    private boolean isConst;
+
+    public void setId(Label id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setValueInt(int valueInt) {
+        this.valueInt = valueInt;
+    }
+
+    public void setValueChar(char valueChar) {
+        this.valueChar = valueChar;
+    }
+
+    public boolean isConst() {
+        return isConst;
+    }
+
+    public void setConst(boolean aConst) {
+        isConst = aConst;
+    }
 
     public LLRegister(int id) {
         this.id = new Label(id);
@@ -51,7 +80,7 @@ public class LLRegister {
     }
 
     public int getRealValue() {
-        if (this.getRegisterType() == RegisterType.CHAR) {
+        if (this.valueType == RetType.i8) {
             return this.getValueChar();
         } else {
             return this.getValueInt();

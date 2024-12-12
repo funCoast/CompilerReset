@@ -690,7 +690,27 @@ public class Parser {
     }
 
     private Character parseCharacter() {
-        Character character = curToken.getName().charAt(1);
+        Character character;
+        if (curToken.getName().length() > 3) {
+            character = curToken.getName().charAt(2);
+            if (character == 'a') {
+                character = 7;
+            } else if (character == 'b') {
+                character = 8;
+            } else if (character == 't') {
+                character = 9;
+            } else if (character == 'n') {
+                character = 10;
+            } else if (character == 'v') {
+                character = 11;
+            } else if (character == 'f') {
+                character = 12;
+            } else if (character == '0') {
+                character = 0;
+            }
+        } else {
+            character = curToken.getName().charAt(1);
+        }
         curToken = nextToken(); // just skip
         outputType("<Character>");
         return character;
