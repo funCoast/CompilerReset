@@ -1,5 +1,54 @@
-
 int main() {
-    printf("%c%c%c%c%c%c%c\n", 's', 'u', 'c', 'c', 'e', 's', 's');
+    int a = 5, b = 3, c = 2, d = 1;
+
+    // 示例1：多个关系运算符组合
+    if (a > b == c < d) { // (a > b) == (c < d)
+        printf("Example 1: true\n");
+    } else {
+        printf("Example 1: false\n");
+    }
+
+    // 示例2：关系运算和相等性测试嵌套
+    if (a == b > c != d) { // (a == (b > c)) != d
+        printf("Example 2: true\n");
+    } else {
+        printf("Example 2: false\n");
+    }
+
+    // 示例3：混合多个条件
+    if (a < b == c > d != a < c) { // ((a < b) == (c > d)) != (a < c)
+        printf("Example 3: true\n");
+    } else {
+        printf("Example 3: false\n");
+    }
+
+    // 示例4：复杂条件与短路求值
+    if (a > b && b == c < d || c != a > d) { // ((a > b) && (b == (c < d))) || (c != (a > d))
+        printf("Example 4: true\n");
+    } else {
+        printf("Example 4: false\n");
+    }
+
+    // 示例5：全假情况下的关系
+    if (a < b == c < d != b > a) { // ((a < b) == (c < d)) != (b > a)
+        printf("Example 5: true\n");
+    } else {
+        printf("Example 5: false\n");
+    }
+
+    // 示例6：多个真假结果混合
+    if (a > b != b > c == c < d) { // ((a > b) != (b > c)) == (c < d)
+        printf("Example 6: true\n");
+    } else {
+        printf("Example 6: false\n");
+    }
+
+    // 示例7：嵌套优先级干扰
+    if (a == b != c > d == d < a) { // ((a == b) != (c > d)) == (d < a)
+        printf("Example 7: true\n");
+    } else {
+        printf("Example 7: false\n");
+    }
+
     return 0;
 }

@@ -32,10 +32,10 @@ public class GetArrayAdrInstr extends Instruction {
     public String toString() {
         // %3 = getelementptr i32, i32* %2, i32 3
         if (this.arrayInstrType == getArrayInstrType.UnknownSize) {
-            return "%" + retReg.getId() + " = getelementptr " + retType + ", " + retType + arrayReg + ", " + retType + indexReg;
+            return "%" + retReg.getId() + " = getelementptr " + retType + ", " + retType + arrayReg + ", " + indexReg.getValueType() + indexReg;
         } else {
             // %1 = getelementptr [5 x i32], [5 x i32]* @a, i32 0, i32 3
-            return "%" + retReg.getId() + " = getelementptr [" + arraySize + " x " + retType + "], [" + arraySize + " x " + retType + "]" + arrayReg + ", i32 0, " + retType + indexReg;
+            return "%" + retReg.getId() + " = getelementptr [" + arraySize + " x " + retType + "], [" + arraySize + " x " + retType + "]" + arrayReg + ", i32 0, " + indexReg.getValueType() + indexReg;
         }
     }
 

@@ -746,6 +746,10 @@ public class Parser {
     private Token nextToken() {
         outputToken(tokens.get(curpos));
         curpos++;
+        if (curpos == 201) {
+            int debug = 0;
+            debug = 10;
+        }
         if (curpos < tokens.size()) {
             return tokens.get(curpos);
         } else {

@@ -14,6 +14,6 @@ public class TruncInstr extends Instruction {
     @Override
     public String toString() {
         // %5 = trunc i32 %4 to i8
-        return "%" + retReg.getId() + " = trunc i32 %" + cutReg.getId() + " to i8";
+        return "%" + retReg.getId() + " = trunc i32" + cutReg + " to i8";
     }
 }

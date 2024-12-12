@@ -3,6 +3,8 @@ package llvm.instruction;
 
 import llvm.RetType;
 
+import java.util.ArrayList;
+
 public class LLRegister {
     private Label id;
     private String name;
@@ -10,6 +12,7 @@ public class LLRegister {
     private char valueChar;
     private RetType valueType;
     private RegisterType registerType;
+    private ArrayList<Integer> valueArrayList;
 
     public LLRegister(int id) {
         this.id = new Label(id);
@@ -57,6 +60,18 @@ public class LLRegister {
 
     public RetType getValueType() {
         return valueType;
+    }
+
+    public ArrayList<Integer> getValueArrayList() {
+        return valueArrayList;
+    }
+
+    public int getValueByIndex(int index) {
+        return valueArrayList.get(index);
+    }
+
+    public void setValueArrayList(ArrayList<Integer> valueArrayList) {
+        this.valueArrayList = valueArrayList;
     }
 
     public void setByReg(LLRegister llRegister) {

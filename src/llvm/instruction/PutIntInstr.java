@@ -12,6 +12,6 @@ public class PutIntInstr extends Instruction {
     @Override
     public String toString() {
         // call void @putint(i32 %7)
-        return "call void @putint(i32 %" + register.getId() + ')';
+        return "call void @putint(i32" + register + ')';
     }
 }

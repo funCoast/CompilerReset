@@ -17,7 +17,7 @@ public class AllocaInstr extends Instruction {
 
     @Override
     public String toString() {
-        if (size > 1) {
+        if (size > 0) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("%" + llRegister.getId() + " = " + "alloca ");
             stringBuilder.append("[" + size + " x " + llRegister.getValueType().toBasic() + "]");
