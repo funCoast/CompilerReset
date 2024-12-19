@@ -23,6 +23,10 @@ public class StringConstValue {
         return size;
     }
 
+    public String getMipsCode() {
+        return "str_" + id + ": .asciiz \"" + value.replace("\\0A", "\\n") + "\"";
+    }
+
     @Override
     public String toString() {
         // @.str.1 = private unnamed_addr constant [8 x i8] c"Hello: \00", align 1

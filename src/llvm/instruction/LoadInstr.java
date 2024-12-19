@@ -14,6 +14,18 @@ public class LoadInstr extends Instruction {
         this.instructionType = instructionType;
     }
 
+    public LLRegister getValueReg() {
+        return valueReg;
+    }
+
+    public LLRegister getPointReg() {
+        return pointReg;
+    }
+
+    public InstructionType getInstructionType() {
+        return instructionType;
+    }
+
     @Override
     public String toString() {
         return "%" + valueReg.getId() + " = " + "load " + valueReg.getValueType() + ", " + pointReg.getValueType() + pointReg;

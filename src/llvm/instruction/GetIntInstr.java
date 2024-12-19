@@ -9,6 +9,10 @@ public class GetIntInstr extends Instruction {
         this.register = register;
     }
 
+    public LLRegister getRegister() {
+        return register;
+    }
+
     @Override
     public String toString() {
         return "%" + register.getId() + " = call i32 @getint()";

@@ -11,6 +11,14 @@ public class ZextInstr extends Instruction {
         this.extRegister = extRegister;
     }
 
+    public LLRegister getRetRegister() {
+        return retRegister;
+    }
+
+    public LLRegister getExtRegister() {
+        return extRegister;
+    }
+
     @Override
     public String toString() {
         //%8 = zext i8 %6 to i32

@@ -78,7 +78,7 @@ public class Lexer {
         curpos = 0;
         String name = null;
         while (true) {
-            while(curpos < line.length() && (line.charAt(curpos) == ' ' || line.charAt(curpos) == '\t' || line.charAt(curpos) == '\r')) {
+            while(curpos < line.length() && (line.charAt(curpos) == ' ' || line.charAt(curpos) == '\t' || line.charAt(curpos) == '\r' ||  line.charAt(curpos) == '\n' ||  line.charAt(curpos) == '\0')) {
                 curpos++;
             }
             if (curpos >= line.length()) {
@@ -316,6 +316,10 @@ public class Lexer {
                         name = "=";
                         curLexType = LexType.ASSIGN;
                     }
+                } else {
+                    name = "=";
+                    curpos++;
+                    curLexType = LexType.ASSIGN;
                 }
             }
             if (name == null) {

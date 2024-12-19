@@ -39,6 +39,38 @@ public class GetArrayAdrInstr extends Instruction {
         }
     }
 
+    public boolean knowIndex() {
+        if (arrayInstrType == getArrayInstrType.UnknownSize) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public LLRegister getArrayReg() {
+        return arrayReg;
+    }
+
+    public LLRegister getRetReg() {
+        return retReg;
+    }
+
+    public RetType getRetType() {
+        return retType;
+    }
+
+    public LLRegister getIndexReg() {
+        return indexReg;
+    }
+
+    public int getArraySize() {
+        return arraySize;
+    }
+
+    public getArrayInstrType getArrayInstrType() {
+        return arrayInstrType;
+    }
+
     private enum getArrayInstrType {
         UnknownSize,
         KnowSize,

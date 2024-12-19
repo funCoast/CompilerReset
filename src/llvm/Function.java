@@ -69,4 +69,28 @@ public class Function extends GlobalValue {
         stringBuilder.append("}\n");
         return stringBuilder.toString();
     }
+
+    public void setArgumentArrayList(ArrayList<Argument> argumentArrayList) {
+        this.argumentArrayList = argumentArrayList;
+    }
+
+    public void setBasicBlockArrayList(ArrayList<BasicBlock> basicBlockArrayList) {
+        this.basicBlockArrayList = basicBlockArrayList;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public RetType getRetType() {
+        return retType;
+    }
+
+    public void setRetType(RetType retType) {
+        this.retType = retType;
+    }
 }

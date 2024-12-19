@@ -19,6 +19,22 @@ public class CallInstr extends Instruction {
         this.argumentRegArrayList = argumentRegArrayList;
     }
 
+    public RetType getRetType() {
+        return retType;
+    }
+
+    public LLRegister getLlRegister() {
+        return llRegister;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ArrayList<LLRegister> getArgumentRegArrayList() {
+        return argumentRegArrayList;
+    }
+
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();

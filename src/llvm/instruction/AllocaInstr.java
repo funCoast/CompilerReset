@@ -15,6 +15,10 @@ public class AllocaInstr extends Instruction {
         return llRegister;
     }
 
+    public int getSize() {
+        return size;
+    }
+
     @Override
     public String toString() {
         if (size > 0) {

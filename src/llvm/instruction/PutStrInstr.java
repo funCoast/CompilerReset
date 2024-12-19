@@ -10,6 +10,10 @@ public class PutStrInstr extends Instruction {
         this.stringConstValue = stringConstValue;
     }
 
+    public int getStringId() {
+        return stringConstValue.getId();
+    }
+
     @Override
     public String toString() {
         int size = stringConstValue.getSize();

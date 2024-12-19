@@ -35,6 +35,42 @@ public class GlobalVariable extends GlobalValue {
         return true;
     }
 
+    public String getMipsCode() {
+        if (isArray) {
+            if (retType == RetType.i32) {
+                if (this.isArrayAllZero()) {
+                    return name + ": .word 0:" + integerArrayList.size();
+                } else {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(name).append(": .word ");
+                    stringBuilder.append(integerArrayList.get(0));
+                    for (int i = 1; i < integerArrayList.size(); i++) {
+                        stringBuilder.append(", ").append(integerArrayList.get(i));
+                    }
+                    return stringBuilder.toString();
+                }
+            } else {
+                if (this.isArrayAllZero()) {
+                    return name + ": .word 0:" + integerArrayList.size();
+                } else {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(name).append(": .word ");
+                    stringBuilder.append(integerArrayList.get(0));
+                    for (int i = 1; i < integerArrayList.size(); i++) {
+                        stringBuilder.append(", ").append(integerArrayList.get(i));
+                    }
+                    return stringBuilder.toString();
+                }
+            }
+        } else {
+            if (retType == RetType.i32) {
+                return name + ": .word " + valueInt;
+            } else {
+                return name + ": .word " + (int)valueChar;
+            }
+        }
+    }
+
     @Override
     public String toString() {
         if (isArray) {

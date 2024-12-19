@@ -35,6 +35,26 @@ public class IcmpInstr extends Instruction {
     public String toString() {
         return "%" + resultReg.getId() + " = icmp " + cmpType + " " + regType + leftReg + "," + rightReg;
     }
+
+    public String getCmpType() {
+        return cmpType.toString();
+    }
+
+    public LLRegister getResultReg() {
+        return resultReg;
+    }
+
+    public LLRegister getLeftReg() {
+        return leftReg;
+    }
+
+    public LLRegister getRightReg() {
+        return rightReg;
+    }
+
+    public RetType getRegType() {
+        return regType;
+    }
 }
 
 enum IcmpType {

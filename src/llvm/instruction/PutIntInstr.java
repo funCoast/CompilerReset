@@ -9,6 +9,10 @@ public class PutIntInstr extends Instruction {
         this.register = register;
     }
 
+    public LLRegister getRegister() {
+        return register;
+    }
+
     @Override
     public String toString() {
         // call void @putint(i32 %7)

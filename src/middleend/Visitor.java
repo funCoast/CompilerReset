@@ -28,7 +28,7 @@ public class Visitor {
     private ArrayList<SymbolTable> symbolTableArrayList;
     private CompError compError;
     private boolean output4Correct = true;
-    private boolean output4Error = true;
+    private boolean output4Error = false;
     private int tableIdTop;
     private int countForCircle;
     private ArrayList<SymbolTable> outputSymbols;
@@ -66,7 +66,9 @@ public class Visitor {
             output4Error = false;
         }
         output2File4Symbol();
-        output2File4LLVM();
+        if (output4Correct) {
+            output2File4LLVM();
+        }
         return this.module;
     }
 
@@ -523,10 +525,6 @@ public class Visitor {
     private void visitStmt_Assign(Stmt_Assign blockItem) {
         LLRegister primaryRegister = new LLRegister(-1);
         // middle:vvv
-        String ident = blockItem.getlVal().getIdent();
-        int identLine = blockItem.getlVal().getIdentLine();
-        Symbol symbol = searchHasDefine(ident, identLine);// get symbol
-        LLRegister targetRegister = symbol.getLlRegister();
         // alloca new point Reg
         visitLVal(blockItem.getlVal(), true, primaryRegister, false);
         LLRegister expRegister = new LLRegister(-1);
@@ -860,7 +858,8 @@ public class Visitor {
                 if (symbol.getLlRegister().isConst()) {
                     LLRegister constReg = new LLRegister(-1);
                     int value = symbol.getLlRegister().getRealValue();
-                    constReg.setRegister(value, (char) value, RetType.i32, RegisterType.NUM);
+                    RetType retType = symbol.getLlRegister().getValueType();
+                    constReg.setRegister(value, (char) value, retType, RegisterType.NUM);
                     lValRegister.setByReg(constReg);
                 } else {
                     LLRegister saveRegister = getNewReg();

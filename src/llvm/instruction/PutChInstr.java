@@ -9,6 +9,10 @@ public class PutChInstr extends Instruction {
         this.register = register;
     }
 
+    public LLRegister getRegister() {
+        return register;
+    }
+
     @Override
     public String toString() {
         //call void @putch(i8 %8)

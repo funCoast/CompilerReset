@@ -1,3 +1,4 @@
+import endend.Translator;
 import entity.CompUnit;
 import frontend.CompError;
 import frontend.Lexer;
@@ -18,6 +19,8 @@ public class Compiler {
         CompUnit compUnit = parser.parseCompUnit();
         //
         Visitor visitor = new Visitor(compUnit, errors);
-        Module module = visitor.visit();
+        Module compModule = visitor.visit();
+        Translator translator = new Translator(compModule, errors);
+        translator.translate();
     }
 }

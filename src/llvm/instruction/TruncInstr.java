@@ -11,6 +11,14 @@ public class TruncInstr extends Instruction {
         this.cutReg = cutReg;
     }
 
+    public LLRegister getRetReg() {
+        return retReg;
+    }
+
+    public LLRegister getCutReg() {
+        return cutReg;
+    }
+
     @Override
     public String toString() {
         // %5 = trunc i32 %4 to i8
