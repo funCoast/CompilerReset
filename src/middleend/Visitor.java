@@ -989,7 +989,10 @@ public class Visitor {
                 IdentType expIdentType = visitExp(funcRParams.get(i), expRegister);
                 paramTypesGet.add(expIdentType);
                 RetType expRetType = getValueRetType(expIdentType);
-                RetType paramRetType = getValueRetType(funcParamArrayList.get(i));
+                RetType paramRetType = RetType.i32;
+                if (i < funcParamArrayList.size()) {
+                    paramRetType = getValueRetType(funcParamArrayList.get(i));
+                }
                 // adapt type
                 if (paramRetType == RetType.i32 && expRetType == RetType.i8) {
                     LLRegister register = getNewReg();
